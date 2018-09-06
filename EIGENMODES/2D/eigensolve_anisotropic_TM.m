@@ -1,6 +1,6 @@
 
 
-function [eigenvals, eigenmodes,A] = eigensolve_TM_Hz(L0, wvlen, xrange, ...
+function [Hz_modes, Ex_modes, Ey_modes, eigenvals] = eigensolve_anisotropic_TM(L0, wvlen, xrange, ...
     yrange, eps_tensor, Npml, neigs)
    
     %% Input Parameters
@@ -36,14 +36,13 @@ function [eigenvals, eigenmodes,A] = eigensolve_TM_Hz(L0, wvlen, xrange, ...
     exy = eps_tensor{1,2};
     eyx = eps_tensor{2,1};
     eyy = eps_tensor{2,2};
-    
     N = size(exx);
     
     %% Set up the permittivity and permeability in the domain.
-    exx = bwdmean_w(exx, 'y');  % average eps for eps_x
-    eyy = bwdmean_w( eyy, 'x');  % average eps for eps_y
-    exy = bwdmean_w( exy, 'y');  % average eps for eps_x
-    eyx = bwdmean_w(eyx, 'x');  % average eps for eps_y
+    exx = bwdmean_w(eps0*exx, 'y');  % average eps for eps_x
+    eyy = bwdmean_w(eps0*eyy, 'x');  % average eps for eps_y
+    exy = bwdmean_w(eps0*exy, 'y');  % average eps for eps_x
+    eyx = bwdmean_w(eps0*eyx, 'x');  % average eps for eps_y
 
     %% Set up number of cells
     xmin = xrange(1); xmax = xrange(2);
@@ -75,62 +74,67 @@ function [eigenvals, eigenmodes,A] = eigensolve_TM_Hz(L0, wvlen, xrange, ...
     Exx = reshape(exx,M,1);
     Eyy = reshape(eyy,M,1);
     Exy = reshape(exy,M,1);
-    Eyx = reshape(exy,M,1);
+    Eyx = reshape(eyx,M,1);
+   
+    %% create interpolation functions;
+    Rxf = interpolate(N, 'x', 'f');
+    Rxb = interpolate(N, 'x', 'b');
+    Ryf = interpolate(N, 'y', 'f');
+    Ryb = interpolate(N, 'y', 'b');
     
     Texx = spdiags(Exx,0,M,M); % creates an MxM matrix, which is the correct size,
     Teyy = spdiags(Eyy,0,M,M);
-    Texy = spdiags(Exy, 0,M,M);
-    Teyx = spdiags(Eyx, 0,M,M);
+    Texy = Rxf*Ryb*spdiags(Exy, 0,M,M);
+    Teyx = Ryf*Rxb*spdiags(Eyx, 0,M,M);
     
+    %% final cell construction
     Tep = [Texx, Texy; Teyx, Teyy];
-    Tep_cell = {Texx, Texy; Teyx, Teyy};
+    %Tep_cell = {Texx, Texy; Teyx, Teyy};
     %% create the derivative oeprators w/ PML
 
     N = [Nx, Ny];
     dL = [dx dy]; % Remember, everything must be in SI units beforehand
 
-    Dxf = createDws_dense('x', 'f', dL, N); 
-    Dyf = createDws_dense('y', 'f', dL, N);
-    Dyb = createDws_dense('y', 'b', dL, N); 
-    Dxb = createDws_dense('x', 'b', dL, N); 
+    Dxf = createDws('x', 'f', dL, N); 
+    Dyf = createDws('y', 'f', dL, N);
+    Dyb = createDws('y', 'b', dL, N); 
+    Dxb = createDws('x', 'b', dL, N); 
     Dxf = Sxf^-1*Dxf; Dyf = Syf^-1*Dyf;
     Dyb = Syb^-1*Dyb; Dxb = Sxb^-1*Dxb; 
     
     %% PROBLEM CONSTRUCTION
     disp('get operator');
-    A = Dxf*Texx^-1*Dxb + Dyf*Teyy^-1*Dyb; %
-    
+    A = -(Dxf*Texx^-1*Dxb + Dyf*Teyy^-1*Dyb); %
+%     A = [-Dyb*Dyf, Dyb*Dxf; ...
+%           Dxb*Dyf, -Dxb*Dxf];
+%     B = Tep;
     disp('start eigensolve');
     %% eigensolver
-    omega_est = 2*pi*c0/(wvlen*L0);
-    [U,V] = eigs(A, neigs, 'smallestabs');
+    omega_est = 2*pi*c0/(wvlen);
+    %[U,V] = eigs(A, neigs, 'smallestabs');
     %find eigenmodes near desired frequency
-    %[U,V] = eigs(A, neigs, omega_est^2);
+    [U,V] = eigs(A, neigs, omega_est^2*mu0);
 
     eigenvals = diag(V); %eigenvals solved are omega^2*mu0
-    eigenvals = (1/mu0)*eigenvals;
-    
-    eigenmodes = cell(1);
-    inv_eps_tensor = inv_block(Tep_cell);
-    
-    %% unravel
-    invexx = inv_eps_tensor{1,1}; %A
-    invexy = inv_eps_tensor{1,2}; %B
-    inveyx = inv_eps_tensor{2,1}; %C
-    inveyy = inv_eps_tensor{2,2}; %D
+    eigenvals = (1/mu0)*sqrt(eigenvals);
     
     %% process the eigenmodes
     for i = 1:neigs
         hz = U(:,i);
-        Hz = reshape(hz, Nx,Ny);
-        ex = invexx*Dyb*hz-invexy*Dxb*hz;
-        ey = inveyx*Dyb*hz - inveyy*Dxb*hz;
+        Hz = reshape(hz, Nx, Ny);
+        a1 = Dyb*hz; a2 = -Dxb*hz;
+        a = [a1;a2];
+        e_fields = Tep\a;
+        ex = e_fields(1:M);
+        ey= e_fields(M+1:end);
         Ex = reshape(ex, Nx, Ny);
         Ey = reshape(ey, Nx,Ny);
-        eigenmodes{i,1} = Hz;
-        eigenmodes{i,2} = Ex;
-        eigenmodes{i,3} = Ey;
+        
+        Ex_modes{i} = Ex;
+        Ey_modes{i} = Ey;
+        Hz_modes{i} = Hz;
 
     end
+
 
 end

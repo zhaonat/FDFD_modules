@@ -1,6 +1,6 @@
 
 
-function [eigenvals, eigenmodes,A] = eigensolve_TM_ExEy(L0, wvlen, xrange, ...
+function [eigenvals, eigenmodes,A] = eigensolve_anisotropic_TM(L0, wvlen, xrange, ...
     yrange, eps_tensor, Npml, neigs)
    
     %% Input Parameters
@@ -40,10 +40,10 @@ function [eigenvals, eigenmodes,A] = eigensolve_TM_ExEy(L0, wvlen, xrange, ...
     N = size(exx);
     
     %% Set up the permittivity and permeability in the domain.
-    exx = bwdmean_w(eps0 * exx, 'y');  % average eps for eps_x
-    eyy = bwdmean_w(eps0 * eyy, 'x');  % average eps for eps_y
-    exy = bwdmean_w(eps0 * exy, 'y');  % average eps for eps_x
-    eyx = bwdmean_w(eps0 * eyx, 'x');  % average eps for eps_y
+    exx = bwdmean_w(exx, 'y');  % average eps for eps_x
+    eyy = bwdmean_w( eyy, 'x');  % average eps for eps_y
+    exy = bwdmean_w( exy, 'y');  % average eps for eps_x
+    eyx = bwdmean_w(eyx, 'x');  % average eps for eps_y
 
     %% Set up number of cells
     xmin = xrange(1); xmax = xrange(2);
@@ -76,51 +76,64 @@ function [eigenvals, eigenmodes,A] = eigensolve_TM_ExEy(L0, wvlen, xrange, ...
     Eyy = reshape(eyy,M,1);
     Exy = reshape(exy,M,1);
     Eyx = reshape(exy,M,1);
+   
+    %% create interpolation functions;
+    Rxf = interpolate(N, 'x', 'f');
+    Rxb = interpolate(N, 'x', 'b');
+    Ryf = interpolate(N, 'y', 'f');
+    Ryb = interpolate(N, 'y', 'b');
     
     Texx = spdiags(Exx,0,M,M); % creates an MxM matrix, which is the correct size,
     Teyy = spdiags(Eyy,0,M,M);
-    Texy = spdiags(Exy, 0,M,M);
-    Teyx = spdiags(Eyx, 0,M,M);
+    Texy = Rxf*Ryb*spdiags(Exy, 0,M,M);
+    Teyx = Ryf*Rxb*spdiags(Eyx, 0,M,M);
+
     
-    Tep = eps0*[Texx, Texy; Teyx, Teyy];
-    
+    %% final cell construction
+    Tep = [Texx, Texy; Teyx, Teyy];
+    Tep_cell = {Texx, Texy; Teyx, Teyy};
     %% create the derivative oeprators w/ PML
 
     N = [Nx, Ny];
     dL = [dx dy]; % Remember, everything must be in SI units beforehand
 
-    Dxf = createDws('x', 'f', dL, N); 
+    Dxf = createDws_dense('x', 'f', dL, N); 
     Dyf = createDws_dense('y', 'f', dL, N);
     Dyb = createDws_dense('y', 'b', dL, N); 
     Dxb = createDws_dense('x', 'b', dL, N); 
     Dxf = Sxf^-1*Dxf; Dyf = Syf^-1*Dyf;
     Dyb = Syb^-1*Dyb; Dxb = Sxb^-1*Dxb; 
-    Deriv = [-Dyb*Dyf Dyb*Dxf; Dxb*Dyf, -Dxb*Dxf];
     
     %% PROBLEM CONSTRUCTION
     disp('get operator');
-    A = Tep\Deriv;
+    %A = -(Dxf*Texx^-1*Dxb + Dyf*Teyy^-1*Dyb); %
+    A = [-Dyb*Dyf, Dyb*Dxf; Dxb*Dyf, ]
     
     disp('start eigensolve');
     %% eigensolver
-    beta_est = 2*pi/(wvlen*L0);
+    omega_est = 2*pi*c0/(wvlen);
     [U,V] = eigs(A, neigs, 'smallestabs');
+    %find eigenmodes near desired frequency
+    %[U,V] = eigs(A, neigs, omega_est^2);
+
     eigenvals = diag(V); %eigenvals solved are omega^2*mu0
     eigenvals = (1/mu0)*eigenvals;
     
     eigenmodes = cell(1);
+    
+    
     %% process the eigenmodes
-    %V = Ex, Ey but flattened;
     for i = 1:neigs
-        ex =U(1:M,i); ey = U( M+1:2*M,i);
-        Ex = reshape(ex, Nx,Ny);
-        Ey = reshape(ey, Nx, Ny);
-        %reconstruct Hz
-        Hz = (Dxf*ey - Dyf*ex)/(1i*omega);
-        eigenmodes{i,1} = Ex;
-        eigenmodes{i,2} = Ey;
-        eigenmodes{i,3} = Hz;
-        
+        hz = U(:,i);
+        Hz = reshape(hz, Nx,Ny);
+        ex = invexx*Dyb*hz-invexy*Dxb*hz;
+        ey = inveyx*Dyb*hz - inveyy*Dxb*hz;
+        Ex = reshape(ex, Nx, Ny);
+        Ey = reshape(ey, Nx,Ny);
+        eigenmodes{i,1} = Hz;
+        eigenmodes{i,2} = Ex;
+        eigenmodes{i,3} = Ey;
+
     end
 
 end

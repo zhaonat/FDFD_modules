@@ -1,5 +1,5 @@
 
-function Dws = createDws_dense(w,s,dL,N)
+function Dws = createDws(w,s,dL,N)
     %w = 'x', 'y', or 'z'
     %s = 'b' or 'w'
     % dL: [dx dy dz] for 3D; [dx dy] for 2D
@@ -17,7 +17,8 @@ function Dws = createDws_dense(w,s,dL,N)
     ind_adj = reshape(ind_adj, N);
     ind_adj = circshift(ind_adj, -sign * ('xyz' == w));
     ind_adj = ind_adj(:);
-
+    
+    %dafuq are these points?
     off_diag = (sign/dw)*ones(M,1);
     on_diag  = -(sign/dw)*ones(M,1);
     Dws = sparse([ind_cur;ind_cur], [ind_adj;ind_cur], [off_diag;on_diag]);
