@@ -1,5 +1,4 @@
 
-
 %% test script for TM Ex Ey eigensolve
 close all
 clear
@@ -16,8 +15,8 @@ Npml = 1*[0 40];  % [Nx_pml Ny_pml]
 [xrange, yrange, N, dL, Lpml] = domain_with_pml(xrange, yrange, N, Npml);  % domain is expanded to include PML
 Nx = N(1); Ny = N(2);
 cx = round(Nx/2); cy = round(Ny/2);
-%% Set up the permittivity.
 
+%% Set up the permittivity.
 %parfor wvlen = wvlen_scan
 wvlen = 1;
 exx = ones(N);  exx(:, cy-50:cy+50) = 12;

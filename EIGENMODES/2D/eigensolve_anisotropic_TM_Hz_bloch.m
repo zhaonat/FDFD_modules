@@ -112,28 +112,6 @@ function [eigenvals, eigenmodes,A] = eigensolve_anisotropic_TM_Hz_bloch(L0, wvle
     
     eigenmodes = cell(1);
     inv_eps_tensor = inv_block(Tep_cell);
-    
-    %% unravel
-    invexx = inv_eps_tensor{1,1}; %A
-    invexy = inv_eps_tensor{1,2}; %B
-    inveyx = inv_eps_tensor{2,1}; %C
-    inveyy = inv_eps_tensor{2,2}; %D
-    
-    %% process the eigenmodes
-    for i = 1:neigs
-        hz = U(:,i);
-        Hz = reshape(hz, Nx,Ny);
-        e_fields = Tep\[Dyb Dxb; Dyb Dxb]*[hz; hz];
-        ex = e_fields(1:M);
-        ey = e_fields(M+1:2*M);
-%         ex = invexx*Dyb*hz-invexy*Dxb*hz;
-%         ey = inveyx*Dyb*hz - inveyy*Dxb*hz;
-        Ex = reshape(ex, Nx, Ny);
-        Ey = reshape(ey, Nx,Ny);
-        eigenmodes{i,1} = Hz;
-        eigenmodes{i,2} = Ex;
-        eigenmodes{i,3} = Ey;
 
-    end
 
 end

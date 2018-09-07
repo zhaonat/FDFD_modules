@@ -1,5 +1,5 @@
 
-function [Hz, Ex, Ey, A,b, Dxf, Dyf] = ...
+function [Hz, Ex, Ey, A,b, Dxf, Dyf, Dxb, Dyb] = ...
     solveTE_nu(L0, wvlen, xrange, yrange, eps_r, Mz, Npml,xs, ys)
 %% Input Parameters
 % wvlen: wavelength in L0
@@ -12,11 +12,6 @@ function [Hz, Ex, Ey, A,b, Dxf, Dyf] = ...
 
 %% Output Parameters
 % Hz, Ex, Ey: Nx-by-Ny arrays of H- and E-field components
-% dL: [dx dy] in L0
-% A: system matrix of A x = b
-% omega: angular frequency for given wvlen
-% Dxf, Dyf - derivative matrices
-% SXf, sxf - derivative matrices with pml implemented
 
 %% Set up the domain parameters.
 
@@ -35,26 +30,20 @@ eps_x = bwdmean_w(eps0 * eps_r, 'y');  % average eps for eps_x
 eps_y = bwdmean_w(eps0 * eps_r, 'x');  % average eps for eps_y
 %these are fully dense matrices...
 
-%currently, eps_x and eps_y are ultra-dense, which isn't right...
-
 %% Set up number of cells
 %the wavelength is much larger than the dimensions of the system...
-xmin = xrange(1); xmax = xrange(2);
-ymin = yrange(1); ymax = yrange(2);
-Nx = N(1); dx = (xmax-xmin)/Nx;
+
+Nx = N(1); dx = (xmax-xmin)/Nx; %we set dx and dy using the new xrange...
 Ny = N(2); dy = (ymax-ymin)/Ny;
 % Nz = 1; dz = 1; 2D solving only
 M = prod(N); %total number of cells
 
 %% Set up the Split coordinate PML
-%sx = create_sfactor('f',Nx);
-%sy = creates_factor('f',Ny);
 Nx_pml = Npml(1); Ny_pml = Npml(2);
-Nwx = Nx; Nwy = Ny;
-sxf = create_sfactor_mine(xrange,'f',omega,eps_0,mu_0,Nwx,Nx_pml);
-syf = create_sfactor_mine(yrange,'f', omega,eps_0,mu_0,Nwy,Ny_pml);
-sxb = create_sfactor_mine(xrange, 'b', omega,eps_0,mu_0, Nwx, Nx_pml);
-syb = create_sfactor_mine(yrange,'b', omega,eps_0,mu_0,Nwy,Ny_pml);
+sxf = create_sfactor_mine(xrange,'f',omega,eps_0,mu_0,Nx,Nx_pml);
+syf = create_sfactor_mine(yrange,'f', omega,eps_0,mu_0,Ny,Ny_pml);
+sxb = create_sfactor_mine(xrange, 'b', omega,eps_0,mu_0, Nx, Nx_pml);
+syb = create_sfactor_mine(yrange,'b', omega,eps_0,mu_0,Ny,Ny_pml);
 
 % now we create the matrix (i.e. repeat sxf Ny times repeat Syf Nx times)
 [Sxf, Syf] = ndgrid(sxf, syf);
@@ -77,9 +66,6 @@ Tepy = spdiags(epyList,0,M,M);
 Tmz = mu0*speye(M); %in most cases, permeability is that of free-space
 
 %% Create Magnetic vector Mz (source profile determined by Mz input)
-% dimension = M*1
-size(Mz)
-M
 Mz = reshape(Mz,M,1);
 Mz = sparse(Mz);
 
@@ -87,11 +73,13 @@ Mz = sparse(Mz);
 
 N = [Nx, Ny];
 dL = [dx dy]; % Remember, everything must be in SI units beforehand
+
 [Fsx, Fsy, Fsx_conj, Fsy_conj] = non_uniform_scaling(xs, ys);
-Dxf = Fsx^-1*createDws_dense('x', 'f', dL, N);%*Fsx; 
-Dyf = Fsy^-1*createDws_dense('y', 'f', dL, N);%*Fsy;
-Dyb = Fsy_conj^-1*createDws_dense('y', 'b', dL, N);%*Fsx_conj; 
-Dxb = Fsx_conj^-1*createDws_dense('x', 'b', dL, N);%*Fsy_conj; 
+
+Dxf = Fsx^-1*createDws('x', 'f', dL, N);%*Fsx; 
+Dyf = Fsy^-1*createDws('y', 'f', dL, N);%*Fsy;
+Dyb = Fsy_conj^-1*createDws('y', 'b', dL, N);%*Fsx_conj; 
+Dxb = Fsx_conj^-1*createDws('x', 'b', dL, N);%*Fsy_conj; 
 Dxf_pml = Sxf^-1*Dxf; 
 Dyf_pml = Syf^-1*Dyf;
 Dyb_pml = Syb^-1*Dyb; 
@@ -99,10 +87,8 @@ Dxb_pml = Sxb^-1*Dxb;
 
 
 %% Construct the matrix A, everything is in 2D
-A = Dxf_pml*(Tepx^-1)*Dxb_pml + Dyf_pml*(Tepy^-1)*Dyb_pml + omega^2*Tmz;
-% note a warning about ill-conditioned matrices will pop up here, but
-% for our purposes, it is okay.
-
+A = Dxf_pml*(Tepx^-1)*Dxb_pml + ...
+    Dyf_pml*(Tepy^-1)*Dyb_pml + omega^2*Tmz;
 %% construct the matrix b, everything is in 2D
 b = 1i*omega*Mz;
 
@@ -111,7 +97,6 @@ b = 1i*omega*Mz;
  if all(b==0)
  	hz = zeros(size(b));
  else
-   %hz = A\b;
  	hz = A\b;
  end
  Hz = reshape(hz, N);

@@ -1,4 +1,4 @@
-function [Hz, Ex, Ey, A, omega,b, Sxf, Syf, Sxb, Syb, Dxf, Dyf, sxf, syf,trun] = ...
+function [Hz, Ex, Ey, A, omega,b] = ...
     solveTE(L0, wvlen, xrange, yrange, eps_r, Mz, Npml)
 %% Input Parameters
 % wvlen: wavelength in L0
@@ -76,8 +76,7 @@ Tmz = mu0*speye(M); %in most cases, permeability is that of free-space
 
 %% Create Magnetic vector Mz (source profile determined by Mz input)
 % dimension = M*1
-size(Mz)
-M
+
 Mz = reshape(Mz,M,1);
 Mz = sparse(Mz);
 
@@ -86,10 +85,10 @@ Mz = sparse(Mz);
 N = [Nx, Ny];
 dL = [dx dy]; % Remember, everything must be in SI units beforehand
 
-Dxf = createDws_dense('x', 'f', dL, N); 
-Dyf = createDws_dense('y', 'f', dL, N);
-Dyb = createDws_dense('y', 'b', dL, N); 
-Dxb = createDws_dense('x', 'b', dL, N); 
+Dxf = createDws('x', 'f', dL, N); 
+Dyf = createDws('y', 'f', dL, N);
+Dyb = createDws('y', 'b', dL, N); 
+Dxb = createDws('x', 'b', dL, N); 
 Dxf_pml = Sxf^-1*Dxf; 
 Dyf_pml = Syf^-1*Dyf;
 Dyb_pml = Syb^-1*Dyb; 
