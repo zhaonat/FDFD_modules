@@ -2,7 +2,7 @@
 function [dx_scale, dy_scale] = generate_nonuniform_scaling(Nft, drt)
     
     %Nft: 1st column is x, 2nd column is y
-    %drt: list of discretizations...
+    %drt: list of discretizations...normalized by some reference
     % we can express drt as proportions of the largest discretization
     % available on the grid...but seems inefficient
     % advantage is we don't have to rewrite the pml sfactor
@@ -19,8 +19,8 @@ function [dx_scale, dy_scale] = generate_nonuniform_scaling(Nft, drt)
     % even indices are transition regions
     
     for i = 1:2:num_regions
-       dx_scale(x0:x0+Nft(i,1)) = drt(i,1);
-       dy_scale(y0:y0+Nft(i,2)) = drt(i,2);
+       dx_scale(x0:x0+Nft(i,1)-1) = drt(i,1);
+       dy_scale(y0:y0+Nft(i,2)-1) = drt(i,2);
     
 
        if(i==num_regions) %no transition after last region

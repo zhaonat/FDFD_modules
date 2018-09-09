@@ -1,6 +1,6 @@
 
 
-function [Hz_modes, Ex_modes, Ey_modes, eigenvals] = eigensolve_anisotropic_TM(L0, wvlen, xrange, ...
+function [Hz_modes, Ex_modes, Ey_modes, eigenvals,A] = eigensolve_anisotropic_TM(L0, wvlen, xrange, ...
     yrange, eps_tensor, Npml, neigs)
    
     %% Input Parameters
@@ -32,17 +32,17 @@ function [Hz_modes, Ex_modes, Ey_modes, eigenvals] = eigensolve_anisotropic_TM(L
     omega = 2*pi*c0/(wvlen);  % angular frequency in rad/sec
 
     %% unravel the epsilon tensor;
-    exx = eps_tensor{1,1};
-    exy = eps_tensor{1,2};
-    eyx = eps_tensor{2,1};
-    eyy = eps_tensor{2,2};
+    exx = eps0*eps_tensor{1,1};
+    exy = eps0*eps_tensor{1,2};
+    eyx = eps0*eps_tensor{2,1};
+    eyy = eps0*eps_tensor{2,2};
     N = size(exx);
     
     %% Set up the permittivity and permeability in the domain.
-    exx = bwdmean_w(eps0*exx, 'y');  % average eps for eps_x
-    eyy = bwdmean_w(eps0*eyy, 'x');  % average eps for eps_y
-    exy = bwdmean_w(eps0*exy, 'y');  % average eps for eps_x
-    eyx = bwdmean_w(eps0*eyx, 'x');  % average eps for eps_y
+    exx_avg = bwdmean_w(exx, 'y');  % average eps for eps_x
+    eyy_avg = bwdmean_w(eyy, 'x');  % average eps for eps_y
+    exy =  interpolate_array(interpolate_array(exy, 'y', 'f'), 'x','b');  % average eps for eps_x
+    eyx = interpolate_array(interpolate_array(eyx, 'x', 'f'), 'y','b');  % average eps for eps_y
 
     %% Set up number of cells
     xmin = xrange(1); xmax = xrange(2);
@@ -84,9 +84,13 @@ function [Hz_modes, Ex_modes, Ey_modes, eigenvals] = eigensolve_anisotropic_TM(L
     
     Texx = spdiags(Exx,0,M,M); % creates an MxM matrix, which is the correct size,
     Teyy = spdiags(Eyy,0,M,M);
+    %have to be careful...only invert nonzero exy or eyx
     Texy = Rxf*Ryb*spdiags(Exy, 0,M,M);
-    Teyx = Ryf*Rxb*spdiags(Eyx, 0,M,M);
-    
+    Teyx = Ryf*Rxb*spdiags(Eyx, 0,M,M); %have large regions of the diagonal that are 0
+%     Texy = spfun(@(x) 1./x, Texy);
+%     Teyx = spfun(@(x) 1./x, Teyx);
+    Texx_avg = spdiags(reshape(exx_avg,M,1),0,M,M);
+    Teyy_avg = spdiags(reshape(eyy_avg,M,1),0,M,M);    
     %% final cell construction
     Tep = [Texx, Texy; Teyx, Teyy];
     %Tep_cell = {Texx, Texy; Teyx, Teyy};
@@ -102,13 +106,15 @@ function [Hz_modes, Ex_modes, Ey_modes, eigenvals] = eigensolve_anisotropic_TM(L
     Dxf = Sxf^-1*Dxf; Dyf = Syf^-1*Dyf;
     Dyb = Syb^-1*Dyb; Dxb = Sxb^-1*Dxb; 
     
+    Cb = vertcat(Dyb, -Dxb);
+    Cf = horzcat(-Dyf, Dxf);
     %% PROBLEM CONSTRUCTION
     disp('get operator');
-    A = -(Dxf*Texx^-1*Dxb + Dyf*Teyy^-1*Dyb); %
-%     A = [-Dyb*Dyf, Dyb*Dxf; ...
-%           Dxb*Dyf, -Dxb*Dxf];
-%     B = Tep;
+    % TEP \ cb is the most expensive operation for this whole thing...
+    % it is okay if the anisotropy is a small fraction of the domain...
+    A = Cf*(Tep\Cb);
     disp('start eigensolve');
+    
     %% eigensolver
     omega_est = 2*pi*c0/(wvlen);
     %[U,V] = eigs(A, neigs, 'smallestabs');
@@ -126,7 +132,12 @@ function [Hz_modes, Ex_modes, Ey_modes, eigenvals] = eigensolve_anisotropic_TM(L
         a = [a1;a2];
         e_fields = Tep\a;
         ex = e_fields(1:M);
-        ey= e_fields(M+1:end);
+        ey = e_fields(M+1:end);
+%         inv_ex = Texx+Texy*Teyy^-1*Teyx;
+%         
+%         inv_ey = Teyy-Teyx*Texx^-1*Texy;
+%         ey= spfun(@(x) 1./x, inv_ey)*(a2 + Teyx*Texx^-1*a1);
+%         ex = spfun(@(x) 1./x, inv_ex)*(a1-Texy*Teyy^-1*a2);
         Ex = reshape(ex, Nx, Ny);
         Ey = reshape(ey, Nx,Ny);
         

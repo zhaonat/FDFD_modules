@@ -1,6 +1,6 @@
 
 function [Hz, Ex, Ey, A,b, Dxf, Dyf, Dxb, Dyb] = ...
-    solveTE_nu(L0, wvlen, xrange, yrange, eps_r, Mz, Npml,xs, ys)
+    solveTE_nu(L0, wvlen, xrange, yrange, eps_r, Mz, Npml,dx_scale, dy_scale, dr_reference)
 %% Input Parameters
 % wvlen: wavelength in L0
 % xrange: [xmin xmax], range of domain in x-direction including PML
@@ -9,7 +9,7 @@ function [Hz, Ex, Ey, A,b, Dxf, Dyf, Dxb, Dyb] = ...
 % Mz: Nx-by-Ny array of magnetic current source density
 % Npml: [Nx_pml Ny_pml], number of cells in x- and y-normal PML
 % xs, ys: 1D arrays containing the deltax and deltay gradings in the domain
-
+% dr_refernece (dx_reference, dy_reference); baseline discretization 
 %% Output Parameters
 % Hz, Ex, Ey: Nx-by-Ny arrays of H- and E-field components
 
@@ -32,9 +32,10 @@ eps_y = bwdmean_w(eps0 * eps_r, 'x');  % average eps for eps_y
 
 %% Set up number of cells
 %the wavelength is much larger than the dimensions of the system...
-
-Nx = N(1); dx = (xmax-xmin)/Nx; %we set dx and dy using the new xrange...
-Ny = N(2); dy = (ymax-ymin)/Ny;
+dx = dr_reference(1);
+dy = dr_reference(2);
+Nx = N(1); 
+Ny = N(2); 
 % Nz = 1; dz = 1; 2D solving only
 M = prod(N); %total number of cells
 
@@ -74,7 +75,7 @@ Mz = sparse(Mz);
 N = [Nx, Ny];
 dL = [dx dy]; % Remember, everything must be in SI units beforehand
 
-[Fsx, Fsy, Fsx_conj, Fsy_conj] = non_uniform_scaling(xs, ys);
+[Fsx, Fsy, Fsx_conj, Fsy_conj] = non_uniform_scaling(dx_scale, dy_scale);
 
 Dxf = Fsx^-1*createDws('x', 'f', dL, N);%*Fsx; 
 Dyf = Fsy^-1*createDws('y', 'f', dL, N);%*Fsy;

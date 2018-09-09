@@ -1,5 +1,5 @@
 
-function [R] = interpolate(N, w, s)  
+function [R] = interpolate_bloch(N, w, s)  
     % this function should look VERY similar to Dws
     % w = 'x', 'y', or 'z'
     % s = 'b' or 'w'

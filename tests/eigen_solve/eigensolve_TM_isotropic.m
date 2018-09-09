@@ -17,7 +17,7 @@ Nx = N(1); Ny = N(2);
 cx = round(Nx/2); cy = round(Ny/2);
 
 %% Set up the permittivity.
-wvlen_guess = 2;
+wvlen_guess = 1;
 
 epsilon = ones(N);
 x = 1:N(1);
