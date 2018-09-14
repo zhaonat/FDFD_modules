@@ -25,10 +25,10 @@ function [dx_scale, dy_scale] = generate_nonuniform_scaling(Nft, drt)
 
        if(i==num_regions) %no transition after last region
            x0 = x0+Nft(i,1);
-           y0 = y0+Nft(i,1);
+           y0 = y0+Nft(i,2);
        else
            x0 = x0+Nft(i,1)+Nft(i+1,1);
-           y0 = y0+Nft(i,1)+Nft(i+1,2);
+           y0 = y0+Nft(i,2)+Nft(i+1,2);
        end
         
     end
@@ -48,9 +48,9 @@ function [dx_scale, dy_scale] = generate_nonuniform_scaling(Nft, drt)
         grading_y = logspace(log10(dy1), log10(dy2), nyt+1);
 
         dx_scale(x0:x0+nxt) = grading_x;
-        dy_scale(y0:y0+nxt) = grading_y;
+        dy_scale(y0:y0+nyt) = grading_y;
         x0 = x0+Nft(i,1)+Nft(i+1,1); 
-        y0 = y0+Nft(i,2)+Nft(i+1,1);
+        y0 = y0+Nft(i,2)+Nft(i+1,2);
 
     end
     

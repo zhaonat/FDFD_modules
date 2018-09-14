@@ -3,28 +3,40 @@
 
 function eps = ...
     hybrid_grating_multi_unit_cell(num_cells, N, L, epsilon_diel,...
-    epsilon_metal, fill_factor, thickness)
+    epsilon_metal, fill_factor, thickness, y_center)
     % thickness in physical units (microns)
     % fill factor (between 0 and 1)
     % we will have specified N and L for the whole simulation grid
     % beforehand
+    lattice_constant = L(1)/num_cells;
+    %metal_thickness = fill_factor*lattice_constant;
+    if(nargin < 8)
+        y_center = L(2)/2;
+    end
     Nx = N(1); Ny = N(2);
+    ny_center = round(Ny*y_center/L(2));
+
     dL = L./N;
-    Nyf = Ny/2; % these are our reference coordinates (aka origin)
-    y1 = Nyf - (thickness/2)/dL(2);
-    y2 = Nyf + (thickness/2)/dL(2);
+    y1 = ny_center - (thickness/2)/dL(2);
+    y2 = ny_center + (thickness/2)/dL(2);
     eps = ones(N);
-    eps(:, y1:y2) = epsilon_diel;
+    eps(:, y1:y2-1) = epsilon_diel;
     
-    unit_cell_size = N(1)/num_cells;
+    %unit_cell_size = N(1)/num_cells;
     
     %% now we have to stripe it, which we will do per unit cell
+    % in fact, I wonder if it is possible to use the original grating
+    % function to do it...yes with x_center..
     for i = 0:num_cells-1
-       x1 = i*unit_cell_size; x2 = (i+1)*unit_cell_size;
-       center = (x1+x2)/2;
-       xm1 = center-fill_factor*unit_cell_size/2;
-       xm2 = center+fill_factor*unit_cell_size/2;
-       eps(xm1:xm2,y1:y2) = epsilon_metal; 
+%        x1 = i*unit_cell_size; x2 = (i+1)*unit_cell_size;
+%        center = (x1+x2)/2;
+%        xm1 = center-fill_factor*unit_cell_size/2;
+%        xm2 = center+fill_factor*unit_cell_size/2;
+       %eps(xm1:xm2,y1:y2) = epsilon_metal; 
+       x_center = (i)*lattice_constant+(lattice_constant/2);
+       eps = add_grating(eps, L, epsilon_diel, epsilon_metal, ...
+            fill_factor, thickness, y_center, x_center, lattice_constant);
+       %figure(); imagesc(abs(eps));
     end
     
 end

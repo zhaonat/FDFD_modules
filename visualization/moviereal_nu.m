@@ -13,6 +13,6 @@ end
 Nframe = Ncycle * Nfpc;  % total # of frames
 for n = 0:Nframe
 	gcf;
-	visreal(array2d * exp(1i*2*pi*n/Nfpc), xrange, yrange);
+	visreal_nu(array2d * exp(1i*2*pi*n/Nfpc), xrange, yrange,0);
 	drawnow;
 end

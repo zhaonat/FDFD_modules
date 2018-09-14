@@ -12,9 +12,9 @@ function sfactor_array = create_sfactor(wrange, s, omega, eps0, mu0, Nw, Nw_pml)
     % sfactor_array: 1D array with Nw elements containing PML s-factors for Dws
 
     eta0 = sqrt(mu0/eps0);  % vacuum impedance
-    m = 4;  % degree of polynomial grading
-    lnR = -16;  % R: target reflection coefficient for normal incidence
-
+    m = 3.5;  % degree of polynomial grading
+    lnR = -12;  % R: target reflection coefficient for normal incidence
+    %prev values m = 4; lnr=-16;
     w_array = linspace(wrange(1), wrange(2), Nw+1);
 
     loc_pml = [w_array(1 + Nw_pml), w_array(end - Nw_pml)]; % specifies where the pml begins on each side

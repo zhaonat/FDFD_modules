@@ -1,4 +1,5 @@
-function eps = stripe_domain_grid(N,L,Delta_stripe, eps_1, eps_2)
+
+function eps = single_stripe_domain_grid(N,L,Delta_stripe, eps_1, eps_2)
     %N: grid points [Nx,Ny]
     %L: [Lx,Ly]; physical dimensions of grid
     % Delta_Stripe [thick_x, thick_y]; size of the stripe

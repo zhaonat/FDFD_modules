@@ -1,4 +1,4 @@
-function [Hz, Ex, Ey, A, omega,b] = ...
+function [Hz, Ex, Ey, A, A_mode, omega,b, Tepx, Tepy, Dxf, Dxb, Dyf, Dyb] = ...
     solveTE(L0, wvlen, xrange, yrange, eps_r, Mz, Npml)
 %% Input Parameters
 % wvlen: wavelength in L0
@@ -29,8 +29,8 @@ omega = 2*pi*c0/(wvlen);  % angular frequency in rad/sec
 
 %% Set up the permittivity and permeability in the domain.
 % bwdmean does nearest neighbor averaging (smoothes out stuff)
-eps_x = bwdmean_w(eps0 * eps_r, 'y');  % average eps for eps_x
-eps_y = bwdmean_w(eps0 * eps_r, 'x');  % average eps for eps_y
+eps_x = bwdmean_w(eps0 * eps_r, 'x');  % average eps for eps_x
+eps_y = bwdmean_w(eps0 * eps_r, 'y');  % average eps for eps_y
 %these are fully dense matrices...
 
 %currently, eps_x and eps_y are ultra-dense, which isn't right...
@@ -48,15 +48,15 @@ M = prod(N); %total number of cells
 %sx = create_sfactor('f',Nx);
 %sy = creates_factor('f',Ny);
 Nx_pml = Npml(1); Ny_pml = Npml(2);
-Nwx = Nx; Nwy = Ny;
-sxf = create_sfactor_mine(xrange,'f',omega,eps_0,mu_0,Nwx,Nx_pml);
-syf = create_sfactor_mine(yrange,'f', omega,eps_0,mu_0,Nwy,Ny_pml);
-sxb = create_sfactor_mine(xrange, 'b', omega,eps_0,mu_0, Nwx, Nx_pml);
-syb = create_sfactor_mine(yrange,'b', omega,eps_0,mu_0,Nwy,Ny_pml);
+sxf = create_sfactor(xrange,'f',omega,eps_0,mu_0,Nx,Nx_pml);
+syf = create_sfactor(yrange,'f', omega,eps_0,mu_0,Ny,Ny_pml);
+sxb = create_sfactor(xrange, 'b', omega,eps_0,mu_0, Nx, Nx_pml);
+syb = create_sfactor(yrange,'b', omega,eps_0,mu_0,Ny,Ny_pml);
 
 % now we create the matrix (i.e. repeat sxf Ny times repeat Syf Nx times)
 [Sxf, Syf] = ndgrid(sxf, syf);
 [Sxb, Syb] = ndgrid(sxb, syb);
+
 
 %Sxf(:) converts from n x n t0 n^2 x 1
 Sxf=spdiags(Sxf(:),0,M,M);
@@ -67,7 +67,7 @@ Syb=spdiags(Syb(:),0,M,M);
 
 %% Create the dielectric and permeability arrays (ex, ey, muz)
 %create a diagonal block matrix of ep and mu...
-epxList = reshape(eps_x,M,1);
+epxList = reshape(eps_x,M,1); % same as doing eps_x(:);
 epyList = reshape(eps_y,M,1);
 Tepx = spdiags(epxList,0,M,M); % creates an MxM matrix, which is the correct size,
 %the M entries in epsList is put on the diagonals
@@ -89,15 +89,16 @@ Dxf = createDws('x', 'f', dL, N);
 Dyf = createDws('y', 'f', dL, N);
 Dyb = createDws('y', 'b', dL, N); 
 Dxb = createDws('x', 'b', dL, N); 
-Dxf_pml = Sxf^-1*Dxf; 
-Dyf_pml = Syf^-1*Dyf;
-Dyb_pml = Syb^-1*Dyb; 
-Dxb_pml = Sxb^-1*Dxb; 
+Dxf_pml = Sxf\Dxf; 
+Dyf_pml = Syf\Dyf;
+Dyb_pml = Syb\Dyb; 
+Dxb_pml = Sxb\Dxb; 
 
 
 %% Construct the matrix A, everything is in 2D
-A = Dxf_pml*(Tepx^-1)*Dxb_pml + Dyf_pml*(Tepy^-1)*Dyb_pml + omega^2*Tmz;
-% note a warning about ill-conditioned matrices will pop up here, but
+A_mode = Dxf_pml*(Tepx^-1)*Dxb_pml + Dyf_pml*(Tepy^-1)*Dyb_pml;
+A = A_mode + omega^2*Tmz;
+% note a warning about ill-conditioned matrices might pop up here, but
 % for our purposes, it is okay.
 
 %% construct the matrix b, everything is in 2D
@@ -109,15 +110,15 @@ t0 =cputime
  if all(b==0)
  	hz = zeros(size(b));
  else
-   %hz = A\b;
  	hz = A\b;
  end
  trun = cputime-t0;
  Hz = reshape(hz, N);
 
+
  %% now solve for Ex and Ey
- ey = (Tepx^-1*Dyb)*hz*1/(1i*omega);
- ex = 1/(1i*omega)*(Tepy^-1*Dxb)*hz;
+ ex = 1/(1i*omega)*Tepy^-1*(Dyb_pml*hz);
+ ey = 1/(1i*omega)*Tepx^-1*(-Dxb_pml*hz);
  Ey = reshape(ey,N);
  Ex = reshape(ex,N);
  

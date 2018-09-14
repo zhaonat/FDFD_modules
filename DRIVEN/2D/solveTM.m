@@ -1,4 +1,5 @@
-function [Ez, Hx, Hy, A, omega,b, Sxf, Dxf, Dyf, sxf, syf,trun] = solveTM(wvlen, xrange, yrange, eps_r, Jz, Npml)
+function [Ez, Hx, Hy, A, omega,b, Sxf, Dxf, Dyf, sxf, syf,trun] =...
+    solveTM(L0, wvlen, xrange, yrange, eps_r, Jz, Npml)
 %% Input Parameters
 % wvlen: wavelength in L0
 % xrange: [xmin xmax], range of domain in x-direction including PML
@@ -15,8 +16,8 @@ function [Ez, Hx, Hy, A, omega,b, Sxf, Dxf, Dyf, sxf, syf,trun] = solveTM(wvlen,
 
 %% Set up the domain parameters.
 %normal SI parameters
-eps_0 = 8.85*10^-12;
-mu_0 = 4*pi*10^-7; 
+eps_0 = 8.85*10^-12*L0;
+mu_0 = 4*pi*10^-7*L0; 
 eps0 = eps_0;  % vacuum permittivity
 mu0 = mu_0;  % vacuum permeability in
 c0 = 1/sqrt(eps0*mu0);  % speed of light in 
@@ -79,10 +80,10 @@ Jz = sparse(Jz);
 N = [Nx, Ny];
 dL = [dx dy]; % Remember, everything must be in SI units beforehand
 
-Dxf = createDws_dense('x', 'f', dL, N); 
-Dyf = createDws_dense('y', 'f', dL, N);
-Dyb = createDws_dense('y', 'b', dL, N); 
-Dxb = createDws_dense('x', 'b', dL, N); 
+Dxf = createDws('x', 'f', dL, N); 
+Dyf = createDws('y', 'f', dL, N);
+Dyb = createDws('y', 'b', dL, N); 
+Dxb = createDws('x', 'b', dL, N); 
 Dxf_pml = Sxf^-1*Dxf; 
 Dyf_pml = Syf^-1*Dyf;
 Dyb_pml = Syb^-1*Dyb; 
@@ -110,8 +111,8 @@ t0 =cputime
  Ez = reshape(ez, N);
 
  %% now solve for Ex and Ey
- hx = -1/(1i*omega)*(Tmx^-1*Dyf)*ez;
- hy = (Tmy^-1*Dxf)*ez*(1/(1i*omega));
+ hx = -1/(1i*omega)*(Tmx^-1*Dyf_pml)*ez;
+ hy = (Tmy^-1*Dxf_pml)*ez*(1/(1i*omega));
  Hy = reshape(hy,N);
  Hx = reshape(hx,N);
  

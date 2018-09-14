@@ -39,8 +39,9 @@ function [Hz_modes, Ex_modes, Ey_modes, eigenvals,A] = eigensolve_anisotropic_TM
     N = size(exx);
     
     %% Set up the permittivity and permeability in the domain.
-    exx_avg = bwdmean_w(exx, 'y');  % average eps for eps_x
-    eyy_avg = bwdmean_w(eyy, 'x');  % average eps for eps_y
+    % this should be x and y too for exx and eyy respectively 
+    exx_avg = bwdmean_w(exx, 'x');  % average eps for eps_x
+    eyy_avg = bwdmean_w(eyy, 'y');  % average eps for eps_y
     exy =  interpolate_array(interpolate_array(exy, 'y', 'f'), 'x','b');  % average eps for eps_x
     eyx = interpolate_array(interpolate_array(eyx, 'x', 'f'), 'y','b');  % average eps for eps_y
 

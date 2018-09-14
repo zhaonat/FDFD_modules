@@ -1,4 +1,4 @@
-function [A, b, omega, Sxf, Syf, Sxb, Syb, Dxf, Dyf, sxf, syf, Tepx, Tepy] = ...
+function [A, b, omega, Dxf, Dyf,Dxb, Dyb, Tepx, Tepy] = ...
     solveTE_matrices(L0, wvlen, xrange, yrange, eps_r, Mz, Npml)
 %% Input Parameters
 % wvlen: wavelength in L0
@@ -29,8 +29,8 @@ omega = 2*pi*c0/(wvlen);  % angular frequency in rad/sec
 
 %% Set up the permittivity and permeability in the domain.
 % bwdmean does nearest neighbor averaging (smoothes out stuff)
-eps_x = bwdmean_w(eps0 * eps_r, 'y');  % average eps for eps_x
-eps_y = bwdmean_w(eps0 * eps_r, 'x');  % average eps for eps_y
+eps_x = bwdmean_w(eps0 * eps_r, 'x');  % average eps for eps_x
+eps_y = bwdmean_w(eps0 * eps_r, 'y');  % average eps for eps_y
 %these are fully dense matrices...
 
 %currently, eps_x and eps_y are ultra-dense, which isn't right...
@@ -85,10 +85,10 @@ Mz = sparse(Mz);
 N = [Nx, Ny];
 dL = [dx dy]; % Remember, everything must be in SI units beforehand
 
-Dxf = createDws_dense('x', 'f', dL, N); 
-Dyf = createDws_dense('y', 'f', dL, N);
-Dyb = createDws_dense('y', 'b', dL, N); 
-Dxb = createDws_dense('x', 'b', dL, N); 
+Dxf = createDws('x', 'f', dL, N); 
+Dyf = createDws('y', 'f', dL, N);
+Dyb = createDws('y', 'b', dL, N); 
+Dxb = createDws('x', 'b', dL, N); 
 Dxf_pml = Sxf^-1*Dxf; 
 Dyf_pml = Syf^-1*Dyf;
 Dyb_pml = Syb^-1*Dyb; 

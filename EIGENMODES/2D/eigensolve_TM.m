@@ -15,8 +15,9 @@ function [Hz_modes, Ex_modes, Ey_modes, eigenvals] = eigensolve_TM(L0, wvlen, xr
     N = size(eps_iso);
     
     %% Set up the permittivity and permeability in the domain.
-    exx = bwdmean_w(eps_0*eps_iso, 'y');  % average eps for eps_x
-    eyy = bwdmean_w(eps_0*eps_iso, 'x');  % average eps for eps_y
+    % the average should be x and y...but in what case do we not want that?
+    exx = bwdmean_w(eps_0*eps_iso, 'x');  % average eps for eps_x
+    eyy = bwdmean_w(eps_0*eps_iso, 'y');  % average eps for eps_y
 
     %% Set up number of cells
     xmin = xrange(1); xmax = xrange(2);
