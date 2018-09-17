@@ -30,7 +30,6 @@ M = prod(N);
 omega = 2*pi*c0/wvlen;  % angular frequency in rad/sec
 
 %% Deal with the s_factor
-[Sxf, Sxb, Syf, Syb] = S_create(L0, wvlen, xrange, yrange, N, Npml); 
 
 %% Set up the permittivity and permeability in the domain.
 eps_x = bwdmean_w(eps0*eps_r, 'x'); 
@@ -42,10 +41,10 @@ T_eps_y = spdiags(eps_y(:), 0, M, M);
 
 
 %% Construct derivate matrices
-Dyb = Syb*createDws('y', 'b', dL, N); 
-Dxb = Sxb*createDws('x', 'b', dL, N); 
-Dxf = Sxf*createDws('x', 'f', dL, N); 
-Dyf = Syf*createDws('y', 'f', dL, N); 
+Dyb = Syb\createDws('y', 'b', dL, N); 
+Dxb = Sxb\createDws('x', 'b', dL, N); 
+Dxf = Sxf\createDws('x', 'f', dL, N); 
+Dyf = Syf\createDws('y', 'f', dL, N); 
 
 %% Reshape Mz into a vector
 mz = reshape(Mz, M, 1); 

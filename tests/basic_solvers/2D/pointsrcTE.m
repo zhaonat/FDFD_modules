@@ -6,7 +6,7 @@ wvlen = 2.0*L0;  % wavelength in L0
 xrange = L0*[-5 5];  % x boundaries in L0
 yrange = L0*[-5 5];  % y boundaries in L0
 N = [100 100];  % [Nx Ny]
-Npml = [0 0];  % [Nx_pml Ny_pml] need to deal with the special case where both are 0
+Npml = [10 10];  % [Nx_pml Ny_pml] need to deal with the special case where both are 0
 
 %% Note on grid resolution of the system
 % dx/(wvlen) ~1/20 or smaller

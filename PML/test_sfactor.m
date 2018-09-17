@@ -2,16 +2,17 @@
 %% CREATE SFACTOR ALREADY ANTICIPATES THAT YOU HAVE CREATED A CONSISTENT DOMAIN PML
 %%===============0 length PML========================00
 
-wrange = [-6*10^-6 6*10^-6]
+wrange = [-6 6]
 s = 'f'
-c = 3*10^8; c0 = c;
-eps0 = 8.85*10^-12;
-mu0 = 4*pi*10^-7;
-Nw = 100
+eps0 = 8.85*10^-12*L0;
+mu0 = 4*pi*10^-7*L0;
+c = 1/sqrt(mu0*eps0); c0 = c;
+
+Nw = 100;
 Nw_pml = 10;
 Nw = Nw+Nw_pml; %this is always true in the actual code;
 
-L0 = 10^-6; wvlen = 3*L0;
+L0 = 10^-6; wvlen = 3;
 omega = 2*pi*c0/(wvlen);
 lnR = -16;
 
@@ -21,14 +22,13 @@ plot(abs(sfactor_array));
 
 %%===================Excessive Length PML======================
 
-Nw_pml = 10;
-Nw = Nw+Nw_pml;
-sfactor_array = create_sfactor_mine(wrange, s, omega, eps0, mu0, Nw, Nw_pml)
+sfactor_array_mine = create_sfactor_mine(wrange, s, omega, eps0, mu0, Nw, Nw_pml);
 figure;
-plot(abs(sfactor_array));
+plot(abs(sfactor_array_mine));
 
 %%================Compare to hw solutoin==================%
-sfactor_array = create_sfactor(wrange, s, omega, eps0, mu0, Nw, Nw_pml)
 figure;
 plot(abs(sfactor_array));
+hold on;
+plot(abs(sfactor_array_mine))
 

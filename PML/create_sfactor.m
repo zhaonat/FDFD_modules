@@ -1,4 +1,4 @@
-function sfactor_array = create_sfactor(wrange, s, omega, eps0, mu0, Nw, Nw_pml)
+function sfactor_array = create_sfactor(wrange, s, omega, eps0, mu0, Nw, Nw_pml, lnR, m)
 %% Input Parameters
     % wrange: [wmin wmax], range of domain in w-direction including PML
     % s: 'b' or 'f', indicating whether s-factor is for Dwb or Dwf
@@ -7,20 +7,25 @@ function sfactor_array = create_sfactor(wrange, s, omega, eps0, mu0, Nw, Nw_pml)
     % mu0: vacuum permeability
     % Nw: number of cells in w-direction
     % Nw_pml: number of cells in PML
-
+    if(nargin <8)
+        lnR = -16;  % R: target reflection coefficient for normal incidence
+    end
+    if(nargin <9)
+        m = 4;% degree of polynomial grading
+    end
     %% Output Parameter
     % sfactor_array: 1D array with Nw elements containing PML s-factors for Dws
 
     eta0 = sqrt(mu0/eps0);  % vacuum impedance
-    m = 3.5;  % degree of polynomial grading
-    lnR = -12;  % R: target reflection coefficient for normal incidence
+%     m = 3.5;  % degree of polynomial grading
+%     lnR = -12;  % R: target reflection coefficient for normal incidence
     %prev values m = 4; lnr=-16;
     w_array = linspace(wrange(1), wrange(2), Nw+1);
 
     loc_pml = [w_array(1 + Nw_pml), w_array(end - Nw_pml)]; % specifies where the pml begins on each side
-    d_pml = abs(wrange - loc_pml) % pml thickness
+    d_pml = abs(wrange - loc_pml); % pml thickness
 
-    sigma_max = -(m+1)*lnR/(2*eta0) ./ d_pml;
+    sigma_max = -(m+1)*lnR/(2*eta0) ./ d_pml; %usually the pml is the same thickness on both sides
 
     %% forward or backward...idk what this is requiring
     if s == 'b'

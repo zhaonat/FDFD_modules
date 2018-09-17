@@ -1,5 +1,9 @@
 function Dws = createDws_bloch(w, s, dL, N, k, L)
 %% This function creates the sparse derivative operators in FDFD
+%% with a bloch boundary condition
+%% note that having a bloch boundary condition is only suitable 
+%% for DRIVEN Simulation
+%% for eigensolutions...you are solving a bloch eigenproblem, so the soln is different
 %% Input parameters
 %   w: one of 'x', 'y'
 %   s: one of 'f' and 'b'
@@ -30,7 +34,7 @@ switch w
             Dws = 1/dL(1) * kron(Iy, dxf); 
         else
             dxb = Ix - circshift(Ix, [0 -1]); 
-            dxb(1,Nx) = exp(1i*kx*Lx);
+            dxb(1,Nx) = -exp(-1i*kx*Lx);
             Dws = 1/dL(1) * kron(Iy, dxb); 
         end
         
@@ -42,7 +46,7 @@ switch w
             Dws = 1/dL(2) * kron(dyf, Ix); 
         else
             dyb = Iy - circshift(Iy, [0 -1]); 
-            dyb(1,Ny) = exp(1i*ky*Ly);            
+            dyb(1,Ny) = -exp(-1i*ky*Ly);            
 
             Dws = 1/dL(2) * kron(dyb, Ix); 
         end

@@ -1,12 +1,12 @@
 
 
-function [Hz, ky_eigs,A] = FDFD_1D_Ky_eigensolve(L0, dx, epsilon, omega, Nx, n, Npml)
+function [Hz, ky_eigs,A, Dxf, Sxf] = FDFD_1D_Ky_eigensolve(L0, dx, epsilon, omega, Nx, n, Npml)
 
 % epsilon :  is an Nx by 1 array containing the dielectric profile of the waveguide array
 % n = number of eigs
 
 if(nargin < 7)
-   Npml = 0
+   Npml = 0;
 end
 
 %% parameter setup
@@ -19,7 +19,7 @@ dL = [dx, 1];
 Lx = Nx/dx;
 xrange = [-Lx,Lx]/2;
 
-Tep_x = spdiags( bwdmean_w(eps0*epsilon, 'x'),0,Nx,Nx); %still a Yee's grid kind of
+Tep_x = spdiags(bwdmean_w(eps0*epsilon, 'x'),0,Nx,Nx); %still a Yee's grid kind of
 Teps = spdiags(eps0*epsilon,0,Nx,Nx); 
 
 %Tep = diag(eps0*epsilon);
@@ -31,12 +31,18 @@ Dxf = createDws('x', 'f', dL, N);
 %create pml
 s_vector_x_f = create_sfactor(xrange, 'f', omega, eps0, mu0, Nx, Npml); 
 s_vector_x_b = create_sfactor(xrange, 'b', omega, eps0, mu0, Nx, Npml); 
-Sxf = diag(s_vector_x_f.^-1);
-Sxb = diag(s_vector_x_b.^-1);
+Sxf = diag(s_vector_x_f);
+Sxb = diag(s_vector_x_b);
+
+%create abc... only partially working
+abc_f = ABC_1D(L0, Nx, dx, omega, 'f');
+abc_b = ABC_1D(L0, Nx, dx, omega, 'b');
 
 %add pml on
-Dxb = Sxb*Dxb;
-Dxf = Sxf*Dxf;
+Dxb = Sxb\Dxb;
+Dxf = Sxf\Dxf;
+%Dxb = abc_b;
+%Dxf = abc_f;
 
 %% formulate equation
 A = Teps*Dxf*Tep_x^-1*Dxb + Teps*omega^2*mu0;
