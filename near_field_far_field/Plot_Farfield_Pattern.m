@@ -1,4 +1,4 @@
-function [U, Farfield] = Plot_Farfield_Pattern(r_near, norm_surf, E_near,...
+function [U, Farfield, total_power] = Plot_Farfield_Pattern(r_near, norm_surf, E_near,...
     H_near, dl, theta_table, wavelength, polarization)
 %function [U, Farfield] = Plot_Farfield_Patten(r_near, norm_surf, E_near, H_near, dl, theta_table, wvlen,  polarization)
 %theta_table: in rad
@@ -37,8 +37,10 @@ U = Farfield_norm.^2;
 
 d_theta = diff(theta_table);
 d_theta = [d_theta(1), d_theta];
+total_power = sum(U(:).*d_theta(:));
 U = U*2*pi/sum(U(:).*d_theta(:));
 
+end
 %% plot
 % figure;
 % plot(theta_table, U, 'b', 'LineWidth', 1.5);

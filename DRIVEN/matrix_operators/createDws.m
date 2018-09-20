@@ -1,7 +1,7 @@
 
 function Dws = createDws(w,s,dL,N)
     %w = 'x', 'y', or 'z'
-    %s = 'b' or 'w'
+    %s = 'b' or 'f'
     % dL: [dx dy dz] for 3D; [dx dy] for 2D
     % N: [Nx Ny Nz] for 3D; [Nx Ny] for 2D
 

@@ -58,12 +58,12 @@ function [Ex, Ey, Ez, A, b, Ao, bo, omega, c0, TepsSuper, TmuSuper] = solve3D_Ei
     N = [Nx, Ny, Nz];
     dL = [dx dy dz]; % Remember, everything must be in SI units beforehand
 
-    Dxf = createDws_dense('x', 'f', dL, N); 
-    Dyf = createDws_dense('y', 'f', dL, N);
-    Dyb = createDws_dense('y', 'b', dL, N); 
-    Dxb = createDws_dense('x', 'b', dL, N); 
-    Dzf = createDws_dense('z', 'f', dL, N); 
-    Dzb = createDws_dense('z', 'b', dL, N); 
+    Dxf = createDws('x', 'f', dL, N); 
+    Dyf = createDws('y', 'f', dL, N);
+    Dyb = createDws('y', 'b', dL, N); 
+    Dxb = createDws('x', 'b', dL, N); 
+    Dzf = createDws('z', 'f', dL, N); 
+    Dzb = createDws('z', 'b', dL, N); 
 
      %% Construct Ch and Ce operators
     Ce = [zeros(M) -Dzf Dyf; Dzf zeros(M) -Dxf; -Dyf Dxf zeros(M)];
