@@ -1,16 +1,17 @@
 %% test script for TM Ex Ey eigensolve
 %% getting plasmonic modes is really hard
+% NEED A CUSTOM FILTER TO ASCERTAIN PLASMONIC MODES OR SURFACE WAVES
 close all
 clear
 
 %% Set up the domain parameters.
 L0 = 1e-6;  % length unit: microns
 c0 = 3e8;
-xrange = [-1,1];  % x boundaries in L0
-yrange = [-2,2];  % y boundaries in L0
+xrange = 0.2*[-1,1];  % x boundaries in L0
+yrange = [-1,1];  % y boundaries in L0
 L = [diff(xrange), diff(yrange)];
-N = [200 200];  % [Nx Ny]
-Npml = 1*[0 20];  % [Nx_pml Ny_pml]
+N = [100 200];  % [Nx Ny]
+Npml = 1*[0 40];  % [Nx_pml Ny_pml]
 
 [xrange, yrange, N, dL, Lpml] = domain_with_pml(xrange, yrange, N, Npml);  % domain is expanded to include PML
 Nx = N(1); Ny = N(2);
@@ -34,16 +35,6 @@ K_vec = [0,0];
 
 [Hz, Ex, Ey, eigenvals] = eigensolve_TM(L0, wvlen_guess, xrange, ...
     yrange, epsilon, Npml, neigs, K_vec);
-
-% for i = 1:neigs
-%    figure();
-%    subplot(121)
-%    visreal(Hz{i}, xrange, yrange);
-%    subplot(122)
-%    visreal(Ex{i}, xrange, yrange);
-%    title(eigenvals(i)/(2*pi*c0)*1e-6);
-% 
-% end
 
 Kx = 0;
 [Hzc, Exc, Eyc, eigenvalsc] = solveTE_BlochX(L0,...

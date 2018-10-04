@@ -1,6 +1,8 @@
 
-function [A, omega,b, Dzf, Dzb, Tep] = ...
-    solveFDFD_1D(wvlen, zrange, dL, eps_r, Mz, Npml, L0)
+function [A, omega,b, Dxf, Dxb, Tep] = ...
+    solveFDFD_1D(wvlen, zrange, dL, eps_r, Mz, L0)
+
+    %in 1D, just put in a MUR boundary
 
     eps_0 = 8.85*10^-12*L0;
     mu_0 = 4*pi*10^-7*L0; 
@@ -22,11 +24,11 @@ function [A, omega,b, Dzf, Dzb, Tep] = ...
     Tep = eps0*diag(eps_r);
     
     %% create Dzf
-    Dzf = createDws_dense('x', 'f', dL, N); 
-    Dzb = createDws_dense('x', 'b', dL, N);
+    Dxf = createDws('x', 'f', dL, N); 
+    Dxb = createDws('x', 'b', dL, N);
     
     %% formulate A operator
-    A = Dzf*Tep^-1*Dzb + omega^2*mu0*eye(Nx);
+    A = Dxf*Tep^-1*Dxb + omega^2*mu0*eye(Nx);
     
     %% construct the source b
     b = 1i*omega*Mz;

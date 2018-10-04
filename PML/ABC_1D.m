@@ -13,14 +13,21 @@ function [abc_scale] = ABC_1D(L0, Nx, dx, omega, s)
         dxf = -Ix + circshift(Ix, [0 1]);
         dxf(Nx,1) = 0;
         %for forward, wave is propagating right
-        dxf(Nx,1) = -1; dxf(Nx,Nx) = 1+1i*omega/c0 ;
+        %dxf(Nx,Nx-1) = -1; 
+        dxf(Nx,Nx) = -1+1i*omega/c0 ;
+        %set the other edge to be the identity only
+        dxf(1,2) =0;
         abc_scale = 1/dx * kron(1, dxf); 
     else
         dxb = Ix - circshift(Ix, [0 -1]); 
         dxb(1,Nx) = 0;
         %for the back, wave is propagating left
         dxb(1,2) = 1; dxb(1,1) = -1 - 1i*omega/c0;
+        %set the other edge to be the identity only
+        dxb(Nx,Nx-1) = 0;
+        
         abc_scale = 1/dx * kron(1, dxb); 
+        
     end
         
 end

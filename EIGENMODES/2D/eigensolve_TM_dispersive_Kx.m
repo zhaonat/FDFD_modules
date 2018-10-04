@@ -1,7 +1,7 @@
 
 function [Hz_modes, Ex_modes, Ey_modes, eigenvals] = ...
     eigensolve_TM_dispersive_Kx(L0, omega, xrange, ...
-    yrange, eps_r, Npml, neigs)
+    yrange, eps_r, Npml, neigs, kx_guess)
    
     %EIGENSOLVE_TM Summary of this function goes here
     %   Detailed explanation goes here
@@ -33,7 +33,8 @@ function [Hz_modes, Ex_modes, Ey_modes, eigenvals] = ...
     L = [diff(xrange), diff(yrange)];
     %% Set up the Split coordinate PML
     Nx_pml = Npml(1); Ny_pml = Npml(2);
-    lnR = -16; m = 4;
+    lnR = -12; m = 3.5;
+    
     sxf = create_sfactor(xrange,'f',omega,eps_0,mu_0,Nx,Nx_pml, lnR, m);
     syf = create_sfactor(yrange,'f', omega,eps_0,mu_0,Ny,Ny_pml, lnR, m);
     sxb = create_sfactor(xrange, 'b', omega,eps_0,mu_0, Nx, Nx_pml, lnR, m);
@@ -81,10 +82,10 @@ function [Hz_modes, Ex_modes, Ey_modes, eigenvals] = ...
     %this appears to be a largely incorrect, though it's not easy to see
     %why. obviously, the dws_bloch does not explicitly know about the bloch
     % function form, but that's fine...we've directly solved that
-    %A = -(Dxf*Tex^-1*Dxb+Dyf*Tey^-1*Dyb)/mu0;
-    K = Dxf*Tex^-1*Dxb+Dyf*Tey^-1*Dyb +omega^2*mu0*I; % 1, with PML, this is not necessarily symmetric
-    M = Te_unavged^-1;                                % lambda^2: DIAGONAL MATRIX
-    D = 2*1i*Vxf*Tex^-1*Dxb;                          % lambda    
+
+    K = (1/mu0)*(Dxf*Tex^-1*Dxb+Dyf*Tey^-1*Dyb) + omega^2*I; % 1, with PML, this is not necessarily symmetric
+    M = mu0^-1*Te_unavged^-1;                                % lambda^2: DIAGONAL MATRIX
+    D = -2*(mu0^-1)*1i*Vxf*Tex^-1*Dxb;                          % lambda    
 
     G = [M,Z; Z,I];
     C = [D,K; -I,Z];
@@ -96,11 +97,12 @@ function [Hz_modes, Ex_modes, Ey_modes, eigenvals] = ...
 
         
     %% eigensolver
-    K_guess = (omega/c0)
+
     disp('start eigensolve');
     %[U,V] = eigs(A, neigs, 'smallestabs');
     %find eigenmodes near desired frequency
-    [U,V] = eigs(C,G,neigs,K_guess); %polyeigs is actually not suitable because it will solve all eigens
+    %Av = lambdaBv
+    [U,V] = eigs(C,G,neigs,kx_guess); %polyeigs is actually not suitable because it will solve all eigens
     %we need to linearize the eigenproblem ourselves
     
 
@@ -114,7 +116,7 @@ function [Hz_modes, Ex_modes, Ey_modes, eigenvals] = ...
     x = repmat(x.', [N(2), 1]); 
     for i = 1:neigs
         Kx = V(i,i);
-        hz = U(1:round(NL/2),i).*exp(-1i*Kx*x);
+        hz = U(1:round(NL/2),i); %.*exp(-1i*Kx*x);
         Hz = reshape(hz, Nx,Ny);
         ex = (1/(1i*omega))*Tey\(Dyb*hz);
         ey = -(1/(1i*omega))*Tex\(Dxb*hz);

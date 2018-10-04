@@ -80,10 +80,19 @@ y_down = ymin*ones(size(x_down));
 mask_flag = [up_flag * ones(size(x_up)), left_flag * ones(size(y_left)), ...
             down_flag * ones(size(x_down)), right_flag * ones(size(y_right))];
 %mask_flag is 1x4*
+%% r_near contains the coordinates of the bounding box used to get the near-fields
 r_near = [[x_up(end:(-1):1); y_up], ...
     [x_left; y_left(end:(-1):1)], ...
     [x_down; y_down],...
     [x_right; y_right]];
+
+% we want to separate r_near into four separate containers
+
+% r_near{1} = [x_up(end:(-1):1); y_up];     %up
+% r_near{2} = [x_left; y_left(end:(-1):1)]; %left
+% r_near{3} = [x_down; y_down];             %down
+% r_near{4} = [x_right; y_right];           %right
+
 norm_surf = [[zeros(size(x_up)); ones(size(x_up))], ...  % up: (0;1)
     [-1*ones(size(y_left)); zeros(size(y_left))],...    % left: (-1;0)
     [zeros(size(x_down)); -1*ones(size(x_down))], ...   % down: (0;-1)

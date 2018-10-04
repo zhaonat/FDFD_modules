@@ -6,6 +6,7 @@ function Farfield = NTFF_Transform_2D(E_near, H_near, norm_surf, r_near, ...
 % Ey}, H = Hz; norm_surf [2*n], r_near [rx; ry], r_hat is observe direction 
 % [2*1]; 
 %dl is a scalar... but what should it be?
+%dl should actually not be a scalar...
 %H is the normalized H (Z0H). Ignore phasor exp(-jkr)/sqrt(r).
 
 k = 2*pi/wavelength;

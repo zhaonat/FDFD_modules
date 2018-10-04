@@ -1,18 +1,23 @@
 
-function [Hz_modes, Ex_modes, Ey_modes, eigenvals, A] = eigensolve_TM(L0, wvlen, xrange, ...
-    yrange, eps_r, Npml, neigs, K_vec)
+function [Ez_modes, Hx_modes, Hy_modes, eigenvals] = ...
+    eigensolve_TE_dispersive_Kx(L0, omega, xrange, ...
+    yrange, eps_r, Npml, neigs, kx_guess)
    
-    %EIGENSOLVE_TM Summary of this function goes here
+    %EIGENSOLVE_TE Summary of this function goes here
     %   Detailed explanation goes here
-    % K_vec: [kx, ky]
+    % we solve for KX, Ky is implicitly assumed to be 0.
     % neigs: number of eigenvalues
+    % omega is the INPUT
+    % Q(a) = Ma^2 + Da + K
+    % paper: Finite-difference complex-wavevector band structure
+    % solver for analysis and design
+    % of periodic radiative microphotonic structures
     
     eps_0 = 8.85*10^-12*L0;
     mu_0 = 4*pi*10^-7*L0; 
     eps0 = eps_0;  % vacuum permittivity
     mu0 = mu_0;  % vacuum permeability in
     c0 = 1/sqrt(eps0*mu0);  % speed of light in 
-    omega = 2*pi*c0/wvlen;
     %% unravel the epsilon tensor;
     N = size(eps_r);
     
@@ -31,8 +36,8 @@ function [Hz_modes, Ex_modes, Ey_modes, eigenvals, A] = eigensolve_TM(L0, wvlen,
     L = [diff(xrange), diff(yrange)];
     %% Set up the Split coordinate PML
     Nx_pml = Npml(1); Ny_pml = Npml(2);
-    lnR = -16;
-    m = 4;
+    lnR = -12; m = 3.5;
+    
     sxf = create_sfactor(xrange,'f',omega,eps_0,mu_0,Nx,Nx_pml, lnR, m);
     syf = create_sfactor(yrange,'f', omega,eps_0,mu_0,Ny,Ny_pml, lnR, m);
     sxb = create_sfactor(xrange, 'b', omega,eps_0,mu_0, Nx, Nx_pml, lnR, m);
@@ -57,33 +62,28 @@ function [Hz_modes, Ex_modes, Ey_modes, eigenvals, A] = eigensolve_TM(L0, wvlen,
     N = [Nx, Ny];
     dL = [dx dy]; % Remember, everything must be in SI units beforehand
    
-    Dxf = createDws_bloch('x', 'f', dL, N, K_vec, L); 
-    Dyf = createDws_bloch('y', 'f', dL, N, K_vec, L);
-    Dyb = createDws_bloch('y', 'b', dL, N, K_vec, L); 
-    Dxb = createDws_bloch('x', 'b', dL, N, K_vec, L); 
 
-%     Dxf = createDws('x', 'f', dL, N); 
-%     Dyf = createDws('y', 'f', dL, N);
-%     Dyb = createDws('y', 'b', dL, N); 
-%     Dxb = createDws('x', 'b', dL, N); 
-%     Vxf = abs(createDws('x', 'f', [2 2], N)); 
+    Dxf = createDws('x', 'f', dL, N); 
+    Dyf = createDws('y', 'f', dL, N);
+    Dyb = createDws('y', 'b', dL, N); 
+    Dxb = createDws('x', 'b', dL, N); 
 
     Dxf = Sxf\Dxf; Dyf = Syf\Dyf;
     Dyb = Syb\Dyb; Dxb = Sxb\Dxb; 
     
     %% PROBLEM CONSTRUCTION
     % assume H_zk(x) = e^{ikx}*(u_k(x)), and perform derivatives
-    KX = K_vec(1); Kx = KX;
-    disp('get operator');
-    
-    %this appears to be a largely incorrect, though it's not easy to see
-    %why. obviously, the dws_bloch does not explicitly know about the bloch
-    % function form, but that's fine...we've directly solved that
-    %A = -(Dxf*Tex^-1*Dxb+Dyf*Tey^-1*Dyb)/mu0;
-    M = Dxf*Tex^-1*Dxb+Dyf*Tey^-1*Dyb;
-    K = Te_unavged^-1;
-    C = 2*1i*Tex^-1*Dxb;
-    [X,e] = polyeig(M,K,C);
+
+    I = speye(M);
+    Z = zeros(M,M,'like',I);    
+    A = (mu0^-1)*Te_unavged^-1*(Dxb*Dxf + Dyb*Dyf) + omega^2*I; % 1, with PML, this is not necessarily symmetric
+    C = -(mu0^-1)*Te_unavged^-1;                                % lambda^2: DIAGONAL MATRIX
+    B = (mu0^-1)*Te_unavged^-1*1i*(Dxf+Dxb);                           % lambda    
+    LHS = [Z , -C; 
+           I ,  Z];
+    RHS = [A, B; 
+           Z, I ];
+    NL = size(LHS);
     
 %     A = -(Dxf*Tex^-1*Dxb - (KX*Te_unavged^-1*KX) + ...
 %          2*1i*KX * Vxf*Tex^-1*Dxb +...
@@ -91,31 +91,36 @@ function [Hz_modes, Ex_modes, Ey_modes, eigenvals, A] = eigensolve_TM(L0, wvlen,
 
         
     %% eigensolver
+
     disp('start eigensolve');
     %[U,V] = eigs(A, neigs, 'smallestabs');
     %find eigenmodes near desired frequency
-    [U,V] = eigs(A, neigs, omega^2);
+    tic
+    [U,V] = eigs(RHS,LHS,neigs,kx_guess); %polyeigs is actually not suitable because it will solve all eigens
+    toc
+    %we need to linearize the eigenproblem ourselves
+    
 
     eigenvals = diag(V); %eigenvals solved are omega^2*mu0
-    eigenvals = sqrt(eigenvals);
-    Hz_modes = cell(1);
-    Ex_modes = cell(1);
-    Ey_modes = cell(1);
+    Ez_modes = cell(1);
+    Hx_modes = cell(1);
+    Hy_modes = cell(1);
     %% process the eigenmodes
     
     x = linspace(xrange(1), xrange(2), N(1)); 
     x = repmat(x.', [N(2), 1]); 
     for i = 1:neigs
-        hz = U(:,i).*exp(-1i*Kx*x);
-        omega = V(i,i);
+        Kx = V(i,i);
+        %some ambiguity about what kind of Kx should go into here
+        hz = U(1:round(NL/2),i);%.*exp(1i*real(Kx)*x);
         Hz = reshape(hz, Nx,Ny);
         ex = (1/(1i*omega))*Tey\(Dyb*hz);
         ey = -(1/(1i*omega))*Tex\(Dxb*hz);
         Ex = reshape(ex, Nx, Ny);
         Ey = reshape(ey, Nx,Ny);
-        Hz_modes{i} = Hz;
-        Ex_modes{i} = Ex;
-        Ey_modes{i} = Ey;
+        Ez_modes{i} = Hz;
+        Hx_modes{i} = Ex;
+        Hy_modes{i} = Ey;
 
     end
     

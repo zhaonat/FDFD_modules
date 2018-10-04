@@ -1,6 +1,6 @@
 
 
-function [Hz, ky_eigs,A, Dxf, Sxf] = FDFD_1D_Ky_eigensolve(L0, dx, epsilon, omega, Nx, n, Npml)
+function [Hz, ky_eigs,A, Dxf, Dxb] = FDFD_1D_Ky_eigensolve(L0, dx, epsilon, omega, Nx, n, Npml)
 
 % epsilon :  is an Nx by 1 array containing the dielectric profile of the waveguide array
 % n = number of eigs
@@ -41,11 +41,13 @@ abc_b = ABC_1D(L0, Nx, dx, omega, 'b');
 %add pml on
 Dxb = Sxb\Dxb;
 Dxf = Sxf\Dxf;
-%Dxb = abc_b;
-%Dxf = abc_f;
+% Dxb = abc_b;
+% Dxf = abc_f;
 
 %% formulate equation
-A = Teps*Dxf*Tep_x^-1*Dxb + Teps*omega^2*mu0;
+Derivative_op = Dxf*Tep_x^-1*Dxb;
+Derivative_op(Nx,Nx-1) = 1; 
+A = Teps*Derivative_op + Teps*omega^2*mu0;
 
 % doing largestabs is not sufficient...
 wvlen = 2*pi*c0/omega;
