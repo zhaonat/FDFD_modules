@@ -83,10 +83,11 @@ function [Hz_modes, Ex_modes, Ey_modes, eigenvals] = ...
     %why. obviously, the dws_bloch does not explicitly know about the bloch
     % function form, but that's fine...we've directly solved that
 
-    K = -(1/mu0)*(Dxf*Tex^-1*Dxb + Dyf*Tey^-1*Dyb) + omega^2*I; % 1, with PML, this is not necessarily symmetric
-    M = mu0^-1*Te_unavged^-1;                                % lambda^2: DIAGONAL MATRIX
-%    D = 2*(mu0^-1)*1i*Vxf*Tex^-1*Dxb;                          % lambda    
-    D = 2*(mu0^-1)*1i*Tex^-1*(Dxb+Dxf);                          % lambda    
+    K = (1/mu0)*(Dxf*Tex^-1*Dxb+Dyf*Tey^-1*Dyb) + omega^2*I; % 1, with PML, this is not necessarily symmetric
+%    M = mu0^-1*Te_unavged^-1;                                % lambda^2: DIAGONAL MATRIX
+    M = mu0^-1*Tex^-1;
+    %D = -2*(mu0^-1)*1i*Vxf*Tex^-1*Dxb;                          % lambda    
+    D = -(mu0^-1)*(1i*(Dxf*Tex^-1+Tex^-1*Dxb));
 
     G = [M,Z; Z,I];
     C = [D,K; -I,Z];
@@ -95,7 +96,6 @@ function [Hz_modes, Ex_modes, Ey_modes, eigenvals] = ...
 %     A = -(Dxf*Tex^-1*Dxb - (KX*Te_unavged^-1*KX) + ...
 %          2*1i*KX * Vxf*Tex^-1*Dxb +...
 %          Dyf*Tey^-1*Dyb)/mu0; %
-
         
     %% eigensolver
 
