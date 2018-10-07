@@ -64,7 +64,7 @@ function [filtered_modes, filtered_eigs, mask] = ...
         end
 
         if(mean(abs(structure_fields))> mean(abs(air_fields)))
-            filtered_eigs = [filtered_eigs, eigenvals(i)];
+            filtered_eigs(c) =  eigenvals(i);
             filtered_modes{c} = eigenmodes{i};
             c = c+1;
         else

@@ -61,7 +61,7 @@ for omega = omega_scan
     [Hz_modes, Ex_modes, Ey_modes, eigenvals] = ...
         eigensolve_TM_dispersive_Kx(L0, omega, xrange, yrange, eps, Npml, neigs, kx_guess);
     pml_threshold = 1e-3;
-    eigenmodes = Hz_modes
+    eigenmodes = Hz_modes;
     %% ======================================================================
     %% ======================= MODE FILTER ==================================
     %% ======================================================================

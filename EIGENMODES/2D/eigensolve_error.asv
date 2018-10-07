@@ -1,0 +1,4 @@
+
+function error = eigensolve_error(A,eigenvector, eigenvalue)
+    return A*eigenvector-eigenvalue*eigenvector;
+end
