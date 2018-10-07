@@ -1,15 +1,52 @@
+%% test script for TM Ex Ey eigensolve
 
-function [Hz_modes, Ex_modes, Ey_modes, eigenvals] = ...
-    eigensolve_TM_dispersive_Kx(L0, omega, xrange, ...
-    yrange, eps_r, Npml, neigs, kx_guess)
-   
-    %EIGENSOLVE_TM Summary of this function goes here
-    %   Detailed explanation goes here
-    % we solve for KX, Ky is implicitly assumed to be 0.
-    % neigs: number of eigenvalues
-    % omega is the INPUT
-    % Q(a) = Ma^2 + Da + K
-    
+% close all
+% clear
+
+%% Set up the domain parameters.
+L0 = 1e-6;  % length unit: microns
+mu0 = 4*pi*1e-7*L0;
+eps0 = 8.854e-12*L0;
+c0 = 1/sqrt(mu0*eps0);
+num_cells = 2;
+xrange = 0.1*num_cells*[-1,1];  % x boundaries in L0
+yrange = [-2,2];  % y boundaries in L0
+L = [diff(xrange), diff(yrange)];
+N = [100 150];  % [Nx Ny]
+Npml = 1*[0 10];  % [Nx_pml Ny_pml]
+
+[xrange, yrange, N, dL, Lpml] = domain_with_pml(xrange, yrange, N, Npml);  % domain is expanded to include PML
+Nx = N(1); Ny = N(2);
+cx = round(Nx/2); cy = round(Ny/2);
+wvlen = 2;
+%% Set up the permittivity.
+omega = 2*pi*c0/(wvlen);
+omega_p =  0.72*pi*1e15;
+gamma = 5.e12;
+epsilon_metal = 1-omega_p^2/(omega^2-1i*gamma*omega);
+epsilon_diel = 16; 
+epsilon_diel = epsilon_metal;
+fill_factor = 0.2;
+thickness = 0.4;
+eps_r = ones(N);
+y_grid_center = L(2)/2;
+y_center = y_grid_center-0.8;
+eps_r = hybrid_grating_multi_unit_cell_add(eps_r,num_cells, N, L, epsilon_diel,...
+    epsilon_metal, fill_factor, thickness, y_center);
+y_center = y_grid_center+0.8;
+eps_r = hybrid_grating_multi_unit_cell_add(eps_r,num_cells, N, L, epsilon_diel,...
+    epsilon_metal, fill_factor, thickness, y_center);
+xlim = xrange;
+ylim = [-1.5, 1.5];
+figure();
+visreal(eps_r, xrange, yrange);
+drawnow()
+%% eigensolve
+neigs = 100;
+kx_guess = 0*pi/L(1);
+%% ========================================================================
+%% ========================================================================
+%% ========================================================================
     eps_0 = 8.85*10^-12*L0;
     mu_0 = 4*pi*10^-7*L0; 
     eps0 = eps_0;  % vacuum permittivity
@@ -84,10 +121,10 @@ function [Hz_modes, Ex_modes, Ey_modes, eigenvals] = ...
     % function form, but that's fine...we've directly solved that
 
     K = (1/mu0)*(Dxf*Tex^-1*Dxb+Dyf*Tey^-1*Dyb) + omega^2*I; % 1, with PML, this is not necessarily symmetric
-%    M = mu0^-1*Te_unavged^-1;                                % lambda^2: DIAGONAL MATRIX
-    M = mu0^-1*Tex^-1;
-    %D = -2*(mu0^-1)*1i*Vxf*Tex^-1*Dxb;                          % lambda    
-    D = -(mu0^-1)*(1i*(Dxf*Tex^-1+Tex^-1*Dxb));
+    M = mu0^-1*Te_unavged^-1;                                % lambda^2: DIAGONAL MATRIX
+    %D = -2*(mu0^-1)*1i*Vxf*Tex^-1*Dxb;% lambda    
+    %apparently, these are not the same...
+    D = -2*(mu0^-1)*Vxf*(1i*(Dxf*Tex^-1 + Tex^-1*Dxb));
     G = [M,Z; Z,I];
     C = [D,K; -I,Z];
     NL = size(G);
@@ -129,6 +166,38 @@ function [Hz_modes, Ex_modes, Ey_modes, eigenvals] = ...
 
     end
     
-    
-end
 
+kx_eigs = eigenvals
+
+%% ========================================================================
+%% ========================================================================
+%% ========================================================================
+kx_eigs = diag(V);
+pml_threshold = 1e-3;
+[filtered_modes, filtered_k, mask] = ...
+    mode_filtering(Hz_modes, kx_eigs, eps_r, xlim, ylim, L, Npml);
+filtered_k = kx_eigs; filtered_modes = Hz_modes;
+for i = 1:length(filtered_k)
+    figure();
+    Kx = filtered_k(i);
+    visreal(filtered_modes{i}, xrange, yrange);
+    title(strcat(num2str(i), ', ', num2str(imag(Kx)/(2*pi)*diff(xrange))));  
+end
+% 
+figure();
+moviereal(filtered_modes{2}, xrange, yrange)
+
+%% compare with bloch solver
+% neigs = 50;
+% [Ez, Hx, Hy, omega_eigs] = solveTM_BlochX(L0, wvlen, xrange, yrange, eps_r, kx_guess, Npml, neigs);
+% [filtered_modes, filtered_omega, mask] = ...
+%     mode_filtering(Ez, omega_eigs, eps_r, xlim, ylim, L, Npml);
+% 
+% for i = 1:length(filtered_omega)
+%     if(abs(real(filtered_omega(i)))/omega > 0.5 )
+%         figure();
+% 
+%         visreal(filtered_modes{i}, xrange, yrange);
+%         title(filtered_omega(i));
+%     end
+% end

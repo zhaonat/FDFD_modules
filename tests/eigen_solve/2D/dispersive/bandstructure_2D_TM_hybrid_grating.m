@@ -11,7 +11,7 @@ c0 = 1/sqrt(mu0*eps0);
 xrange = 0.075*[-1,1];  % x boundaries in L0
 yrange = [-1,1];  % y boundaries in L0
 L = [diff(xrange), diff(yrange)];
-N = [100 150];  % [Nx Ny]
+N = [100 170];  % [Nx Ny]
 Npml = 1*[0 10];  % [Nx_pml Ny_pml]
 
 [xrange, yrange, N, dL, Lpml] = domain_with_pml(xrange, yrange, N, Npml);  % domain is expanded to include PML
@@ -44,7 +44,7 @@ for omega = omega_scan
     x = 1:N(1);
     y = 1:N(2);
     [xx, yy] = meshgrid(x,y);
-    half_ny = 10;
+    half_ny = 12;
     structure_xbounds = xrange;
     structure_ybounds = [-half_ny*dL(2), half_ny*dL(2)];
     eps(:,cy-half_ny:cy+half_ny) = 16;
@@ -60,7 +60,7 @@ for omega = omega_scan
  
     [Hz_modes, Ex_modes, Ey_modes, eigenvals] = ...
         eigensolve_TM_dispersive_Kx(L0, omega, xrange, yrange, eps, Npml, neigs, kx_guess);
-    pml_threshold = 1e-3;
+    pml_threshold = 2e-3;
     eigenmodes = Hz_modes
     %% ======================================================================
     %% ======================= MODE FILTER ==================================
