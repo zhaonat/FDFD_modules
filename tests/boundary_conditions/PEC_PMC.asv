@@ -1,0 +1,24 @@
+%% tests for the PEC and PMC boundary condition (aka dirichlet for maxwell?)
+
+% first, we will test the derivative operators (code named Dirichlet)
+N = [10,10];
+dL = [1,1];
+Dxf = createDws_dirichlet('x', 'f', dL,N);
+Dxf_2 = createDws_dirichlet('x', 'f', dL,N);
+
+% create  PEC
+Dxfd = createDws_dirichlet('x', 'f', dL,N);
+Dxbd = createDws_dirichlet('x', 'b', dL,N);
+Dyfd = createDws_dirichlet('y', 'f', dL,N);
+Dybd = createDws_dirichlet('y', 'b', dL,N);
+
+del2x = D
+
+A = Dxbd*Dxfd+Dybd*Dyfd;
+figure(); spy(Dxbd*Dxfd);
+Dxf = createDws('x', 'f', dL,N);
+Dxb = createDws('x', 'b', dL,N);
+Dyf = createDws('y', 'f', dL,N);
+Dyb = createDws('y', 'b', dL,N);
+Apbc = Dxb*Dxf+Dyb*Dyf;
+

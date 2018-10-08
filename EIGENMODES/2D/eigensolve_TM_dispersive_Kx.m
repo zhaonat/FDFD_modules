@@ -76,35 +76,32 @@ function [Hz_modes, Ex_modes, Ey_modes, eigenvals] = ...
     %% PROBLEM CONSTRUCTION
     % assume H_zk(x) = e^{ikx}*(u_k(x)), and perform derivatives
 
-    disp('get operator');
     I = speye(M);
     Z = zeros(M,M,'like',I);    
-    %this appears to be a largely incorrect, though it's not easy to see
-    %why. obviously, the dws_bloch does not explicitly know about the bloch
-    % function form, but that's fine...we've directly solved that
-
-    K = (1/mu0)*(Dxf*Tex^-1*Dxb+Dyf*Tey^-1*Dyb) + omega^2*I; % 1, with PML, this is not necessarily symmetric
-%    M = mu0^-1*Te_unavged^-1;                                % lambda^2: DIAGONAL MATRIX
-    M = mu0^-1*Tex^-1;
-    %D = -2*(mu0^-1)*1i*Vxf*Tex^-1*Dxb;                          % lambda    
-    D = -(mu0^-1)*(1i*(Dxf*Tex^-1+Tex^-1*Dxb));
-
-    G = [M,Z; Z,I];
-    C = [D,K; -I,Z];
-    NL = size(G);
+    A = (mu0^-1)*Te_unavged^-1*(Dxb*Dxf + Dyb*Dyf) + omega^2*I; % 1, with PML, this is not necessarily symmetric
+    C = -(mu0^-1)*Te_unavged^-1;                                % lambda^2: DIAGONAL MATRIX
+    B = (mu0^-1)*Te_unavged^-1*1i*(Dxf+Dxb);                           % lambda    
+    LHS = [Z , -C; 
+           I ,  Z];
+    RHS = [A, B; 
+           Z, I ];
+    NL = size(LHS);
     
 %     A = -(Dxf*Tex^-1*Dxb - (KX*Te_unavged^-1*KX) + ...
 %          2*1i*KX * Vxf*Tex^-1*Dxb +...
 %          Dyf*Tey^-1*Dyb)/mu0; %
+
         
     %% eigensolver
 
     disp('start eigensolve');
     %[U,V] = eigs(A, neigs, 'smallestabs');
     %find eigenmodes near desired frequency
-    %Av = lambdaBv
-    [U,V] = eigs(C,G,neigs,kx_guess); %polyeigs is actually not suitable because it will solve all eigens
+    tic
+    [U,V] = eigs(RHS,LHS,neigs,kx_guess); %polyeigs is actually not suitable because it will solve all eigens
+    toc
     %we need to linearize the eigenproblem ourselves
+
     
 
     eigenvals = diag(V); %eigenvals solved are omega^2*mu0
