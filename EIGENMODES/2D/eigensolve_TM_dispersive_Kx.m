@@ -78,9 +78,12 @@ function [Hz_modes, Ex_modes, Ey_modes, eigenvals] = ...
 
     I = speye(M);
     Z = zeros(M,M,'like',I);    
-    A = (mu0^-1)*Te_unavged^-1*(Dxb*Dxf + Dyb*Dyf) + omega^2*I; % 1, with PML, this is not necessarily symmetric
-    C = -(mu0^-1)*Te_unavged^-1;                                % lambda^2: DIAGONAL MATRIX
-    B = (mu0^-1)*Te_unavged^-1*1i*(Dxf+Dxb);                           % lambda    
+    A = (1/mu0)*(Dxf*Tex^-1*Dxb+Dyf*Tey^-1*Dyb) + omega^2*I; % 1, with PML, this is not necessarily symmetric
+%   C = mu0^-1*Te_unavged^-1;                                % lambda^2: DIAGONAL MATRIX
+    C = -mu0^-1*Tex^-1;
+    %B = -2*(mu0^-1)*1i*Vxf*Tex^-1*Dxb;                          % lambda    
+    B = (mu0^-1)*(1i*(Dxf*Tex^-1+Tex^-1*Dxb));
+                          % lambda    
     LHS = [Z , -C; 
            I ,  Z];
     RHS = [A, B; 
