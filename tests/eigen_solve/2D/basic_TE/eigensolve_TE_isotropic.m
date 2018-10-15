@@ -10,7 +10,7 @@ xrange = [-1,1];  % x boundaries in L0
 yrange = [-1,1];  % y boundaries in L0
 L = [diff(xrange), diff(yrange)];
 N = [200 200];  % [Nx Ny]
-Npml = 0*[20 20];  % [Nx_pml Ny_pml]
+Npml = 1*[15 15];  % [Nx_pml Ny_pml]
 
 [xrange, yrange, N, dL, Lpml] = domain_with_pml(xrange, yrange, N, Npml);  % domain is expanded to include PML
 Nx = N(1); Ny = N(2);

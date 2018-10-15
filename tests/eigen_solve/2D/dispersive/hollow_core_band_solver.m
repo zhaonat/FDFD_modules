@@ -18,7 +18,7 @@ Npml = 1*[0 10];  % [Nx_pml Ny_pml]
 [xrange, yrange, N, dL, Lpml] = domain_with_pml(xrange, yrange, N, Npml);  % domain is expanded to include PML
 Nx = N(1); Ny = N(2);
 cx = round(Nx/2); cy = round(Ny/2);
-num_samples = 4;
+num_samples = 450;
 wvlen_scan = logspace(log10(0.5),log10(4),num_samples);
 omega_p =  0.72*pi*1e15;
 gamma = 5.5e12;
@@ -62,7 +62,7 @@ parfor c = 1:num_samples
      %% store the requisite data
 
     if(mod(c,mode_mod) == 0)
-        mode_storage{c} = filered_modes;
+        mode_storage{c} = filtered_modes;
     end
     Kx_structure{c} = filtered_k;
 
