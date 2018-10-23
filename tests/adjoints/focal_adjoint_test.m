@@ -84,6 +84,7 @@ for t =1:epochs
         visreal(Ez, xrange, yrange);
         subplot(122);
         visreal(eps_r, xrange, yrange);
+        caxis([-1,6])
         drawnow();
     end
     

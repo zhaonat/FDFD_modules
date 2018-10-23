@@ -37,7 +37,7 @@ function PEC_mask = create_PEC(N, w)
     if(w == 'x')
         mask(Xn == 1) = 0;
         mask(Xn == N(1)) =0;
-    elif(w == 'y')
+    elseif(w == 'y')
         mask(Yn == 1) = 0;
         mask(Yn == N(2)) =0;   
     end

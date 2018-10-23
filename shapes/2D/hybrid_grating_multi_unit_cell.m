@@ -1,7 +1,7 @@
 
 %% function which generates multiple unit cells on one grid
 
-function eps = ...
+function [eps, ny_bounds,metal_bound_array ] = ...
     hybrid_grating_multi_unit_cell(num_cells, N, L, epsilon_diel,...
     epsilon_metal, fill_factor, thickness, y_center)
     % thickness in physical units (microns)
@@ -20,13 +20,15 @@ function eps = ...
     y1 = ny_center - (thickness/2)/dL(2);
     y2 = ny_center + (thickness/2)/dL(2);
     eps = ones(N);
-    eps(:, y1:y2-1) = epsilon_diel;
+    %eps(:, y1:y2-1) = epsilon_diel;
+    %ny_bounds = [y1, y2-1];
     
     %unit_cell_size = N(1)/num_cells;
     
     %% now we have to stripe it, which we will do per unit cell
     % in fact, I wonder if it is possible to use the original grating
     % function to do it...yes with x_center..
+    metal_bound_array = [];
     for i = 0:num_cells-1
 %        x1 = i*unit_cell_size; x2 = (i+1)*unit_cell_size;
 %        center = (x1+x2)/2;
@@ -34,9 +36,9 @@ function eps = ...
 %        xm2 = center+fill_factor*unit_cell_size/2;
        %eps(xm1:xm2,y1:y2) = epsilon_metal; 
        x_center = (i)*lattice_constant+(lattice_constant/2);
-       eps = add_grating(eps, L, epsilon_diel, epsilon_metal, ...
+       [eps, ny_bounds, metalbounds] = add_grating(eps, L, epsilon_diel, epsilon_metal, ...
             fill_factor, thickness, y_center, x_center, lattice_constant);
-       %figure(); imagesc(abs(eps));
+       metal_bound_array = [metal_bound_array; metalbounds];
     end
     
 end
