@@ -1,7 +1,10 @@
-function [Ex, Ey, Ez, A, b, Ao, bo, omega, c0, TepsSuper, TmuSuper] = solve3D_EigenEngine(L0, wvlen, xrange, yrange, zrange, eps_r, JCurrentVector, Npml, s)
+function [A, b, Ao, bo, omega, TepsSuper, TmuSuper] = ...
+    solve3D_matrices(L0, wvlen, xrange, yrange, zrange, eps_r, JCurrentVector, Npml, s)
 
     %% Set up the domain parameters.
-
+    %% Ao, bo are the matrices without Wonseok's correction
+    %% this function only produces the system, but does not solve anything
+    
     %normal SI parameters
     eps_0 = 8.85*10^-12*L0;
     mu_0 = 4*pi*10^-7*L0; 
@@ -54,23 +57,48 @@ function [Ex, Ey, Ez, A, b, Ao, bo, omega, c0, TepsSuper, TmuSuper] = solve3D_Ei
     Mz = sparse(Mz);
 
     %% create the derivative oeprators w/ PML
-
-    N = [Nx, Ny, Nz];
+    Nx_pml = Npml(1); Ny_pml = Npml(2); Nz_pml = Npml(3);
     dL = [dx dy dz]; % Remember, everything must be in SI units beforehand
 
-    Dxf = createDws('x', 'f', dL, N); 
-    Dyf = createDws('y', 'f', dL, N);
-    Dyb = createDws('y', 'b', dL, N); 
-    Dxb = createDws('x', 'b', dL, N); 
-    Dzf = createDws('z', 'f', dL, N); 
-    Dzb = createDws('z', 'b', dL, N); 
+    %% PML operators
+    sxf = create_sfactor_mine(xrange,'f',omega,eps_0,mu_0,Nx,Nx_pml);
+    syf = create_sfactor_mine(yrange,'f', omega,eps_0,mu_0,Ny,Ny_pml);
+    sxb = create_sfactor_mine(xrange, 'b', omega,eps_0,mu_0, Nx, Nx_pml);
+    syb = create_sfactor_mine(yrange,'b', omega,eps_0,mu_0,Ny,Ny_pml);
+    szf = create_sfactor_mine(xrange, 'f', omega,eps_0,mu_0, Nz, Npml(3));
+    szb = create_sfactor_mine(yrange,'b', omega,eps_0,mu_0,Nz,Npml(3));
 
-     %% Construct Ch and Ce operators
-    Ce = [zeros(M) -Dzf Dyf; Dzf zeros(M) -Dxf; -Dyf Dxf zeros(M)];
-    Ch = [zeros(M) -Dzb Dyb; Dzb zeros(M) -Dxb; -Dyb Dxb zeros(M)];
+
+    % now we create the matrix (i.e. repeat sxf Ny times repeat Syf Nx times)
+    [Sxf, Syf, Szf] = ndgrid(sxf, syf, szf);
+    [Sxb, Syb, Szb] = ndgrid(sxb, syb, szb);
+
+    %Sxf(:) converts from n x n t0 n^2 x 1
+    Sxf=spdiags(Sxf(:),0,M,M);
+    Sxb=spdiags(Sxb(:),0,M,M);
+    Syf=spdiags(Syf(:),0,M,M);
+    Syb=spdiags(Syb(:),0,M,M);
+    Szf=spdiags(Szf(:),0,M,M);
+    Szb=spdiags(Szb(:),0,M,M);
+    
+    
+    %% Derivative operators
+    Dxf = Sxf\createDws('x', 'f', dL, N); 
+    Dyf = Syf\createDws('y', 'f', dL, N);
+    Dyb = Syb\createDws('y', 'b', dL, N); 
+    Dxb = Sxb\createDws('x', 'b', dL, N); 
+    Dzf = Szf\createDws('z', 'f', dL, N); 
+    Dzb = Szb\createDws('z', 'b', dL, N); 
+    
+
+    %% Construct Ch and Ce operators (curlH, curl E) or basically curl_forward
+    zero_matrix = zeros(M,'like',Dxf) ;
+    % and curl backward
+    Ce = [zero_matrix -Dzf Dyf; Dzf zero_matrix -Dxf; -Dyf Dxf zero_matrix];
+    Ch = [zero_matrix -Dzb Dyb; Dzb zero_matrix -Dxb; -Dyb Dxb zero_matrix];
 
     %% Construct the matrix A, everything is in 2D
-    %% constrct the eE term
+    %% constrct the grad(eE) term
     %gradient(divergence)
     GradDiv = [Dxf*Tepx^-1*Dxb*Tepx, Dxf*Tepx^-1*Dyb*Tepy, Dxf*Tepx^-1*Dzb*Tepz; ...
         Dyf*Tepy^-1*Dxb*Tepx, Dyf*Tepy^-1*Dyb*Tepy, Dyf*Tepy^-1*Dzb*Tepz; ...
@@ -79,18 +107,12 @@ function [Ex, Ey, Ez, A, b, Ao, bo, omega, c0, TepsSuper, TmuSuper] = solve3D_Ei
     WAccelScal = speye(3*(Nx*Ny*Nz))*TmuSuper^-1;
     A = Ch*TmuSuper^-1*Ce + s*WAccelScal*GradDiv - omega^2*TepsSuper;
     Ao = Ch*TmuSuper^-1*Ce - omega^2*TepsSuper;
-%     figure; 
-%     spy(A); pause; 
 
     %% construct the matrix b, everything is in 2D
     J = [Mx; My; Mz];
     b = -1i*omega*J; bo = b;
     JCorrection = (1i/omega) * (s*GradDiv*WAccelScal)*TepsSuper^-1*J;
     b = b+JCorrection;
-    solution = A\b;
-    solLength = length(solution);
-    Ex = solution(1:solLength/3);
-    Ey = solution(solLength/3+1:solLength*(2/3));
-    Ez = solution(solLength*(2/3)+1: solLength);
+
 
 end

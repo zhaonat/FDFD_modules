@@ -1,5 +1,7 @@
-function [A, Ao, TepsSuper, TmuSuper] = ...
-    solve3D_CurlCurlOperator(L0, xrange, yrange, zrange, eps_r,...
+
+function [A, b, Ao, bo, omega, c0, TepsSuper, TmuSuper, ...
+    Sxf, Syf, Szf, Sxb, Syb, Szb] = ...
+    solve3D_EigenEngine_Matrices_dirichlet(L0, wvlen, xrange, yrange, zrange, eps_r,...
     JCurrentVector, Npml, s)
 
     %% Set up the domain parameters.
@@ -56,13 +58,39 @@ function [A, Ao, TepsSuper, TmuSuper] = ...
     N = [Nx, Ny, Nz];
     dL = [dx dy dz]; % Remember, everything must be in SI units beforehand
 
-    Dxf = createDws_dense('x', 'f', dL, N); 
-    Dxb = createDws_dense('x', 'b', dL, N); 
-    Dyf = createDws_dense('y', 'f', dL, N);
-    Dyb = createDws_dense('y', 'b', dL, N); 
-    Dzf = createDws_dense('z', 'f', dL, N); 
-    Dzb = createDws_dense('z', 'b', dL, N); 
+    Dxf = createDws_dirichlet('x', 'f', dL, N); 
+    Dxb = createDws_dirichlet('x', 'b', dL, N); 
+    Dyf = createDws_dirichlet('y', 'f', dL, N);
+    Dyb = createDws_dirichlet('y', 'b', dL, N); 
+    Dzf = createDws_dirichlet('z', 'f', dL, N); 
+    Dzb = createDws_dirichlet('z', 'b', dL, N); 
+    
+    %% ADD IN PML
+    sxf = create_sfactor_mine(xrange,'f',omega,eps_0,mu_0,Nx,Npml(1));
+    sxb = create_sfactor_mine(xrange, 'b', omega,eps_0,mu_0, Nx, Npml(1));
+    syf = create_sfactor_mine(yrange,'f', omega,eps_0,mu_0,Ny,Npml(2));
+    syb = create_sfactor_mine(yrange,'b', omega,eps_0,mu_0,Ny,Npml(2));
+    szf = create_sfactor_mine(zrange, 'f', omega,eps_0,mu_0, Nz, Npml(3));
+    szb = create_sfactor_mine(zrange,'b', omega,eps_0,mu_0,Nz, Npml(3));
 
+    [Sxf, Syf, Szf] = ndgrid(sxf, syf, szf);
+    [Sxb, Syb, Szb] = ndgrid(sxb, syb, szb);
+    
+    %Sxf(:) converts from n x n t0 n^2 x 1
+    Sxf=spdiags(Sxf(:),0,M,M);
+    Sxb=spdiags(Sxb(:),0,M,M);
+    Syf=spdiags(Syf(:),0,M,M);
+    Syb=spdiags(Syb(:),0,M,M);
+    Szf=spdiags(Szf(:),0,M,M);
+    Szb=spdiags(Szb(:),0,M,M);
+    
+    Dxf = Sxf^-1*Dxf; 
+    Dyf = Syf^-1*Dyf;
+    Dyb = Syb^-1*Dyb; 
+    Dxb = Sxb^-1*Dxb;
+    Dzf = Szf^-1*Dzf;
+    Dzb = Szf^-1*Dzb;
+    
     %% Construct Ch and Ce operators
     Ce = [sparse(M,M), -Dzf, Dyf; Dzf, sparse(M,M), -Dxf; -Dyf, Dxf, sparse(M,M)];
     Ch = [sparse(M,M), -Dzb, Dyb; Dzb, sparse(M,M), -Dxb; -Dyb, Dxb, sparse(M,M)];
@@ -74,10 +102,13 @@ function [A, Ao, TepsSuper, TmuSuper] = ...
         Dzf*Tepz^-1*Dxb*Tepx, Dzf*Tepz^-1*Dyb*Tepy, Dzf*Tepz^-1*Dzb*Tepz];
 
     WAccelScal = speye(3*(Nx*Ny*Nz))*TmuSuper^-1;
-    A = Ch*TmuSuper^-1*Ce + s*WAccelScal*GradDiv;
-    Ao = Ch*TmuSuper^-1*Ce;
+    A = Ch*TmuSuper^-1*Ce + s*WAccelScal*GradDiv - omega^2*TepsSuper;
+    Ao = Ch*TmuSuper^-1*Ce - omega^2*TepsSuper;
 
-
-  
+    %% construct the matrix b, everything is in 2D matrices
+    J = [Mx; My; Mz];
+    b = -1i*omega*J; bo = b;
+    JCorrection = (1i/omega) * (s*WAccelScal)*TepsSuper^-1*GradDiv*J;
+    b = b + JCorrection;
    
 end
