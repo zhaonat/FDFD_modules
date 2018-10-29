@@ -22,3 +22,5 @@ tested on 60x60x60 grids (dipole in vacuum) on a laptop and QMR and runs reasona
 ## basic adjoints
 Very simple adjoint example (hopefully more work here later)
 
+### unit conventions
+For this package, note that most things are specified so that any spatial units are in units of microns.
