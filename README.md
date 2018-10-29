@@ -1,6 +1,9 @@
 # FDFD_modules
 personal set of FDFD codes used for my research. Much of this has been inspired by Yu (Jerry) Shi and Wonseok Shin
 
+## dependencies
+Functional version of MatLab 2016 or greater. This was coded in Matlab 2017.
+
 ## dimensionalities d = 1,2,3
 Implementations of FDFD for 1D, 2D, and 3D simulations
 
