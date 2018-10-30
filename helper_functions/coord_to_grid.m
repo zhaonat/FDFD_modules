@@ -11,8 +11,14 @@ function [nx,ny] = coord_to_grid(coordinate, N, xrange, yrange)
     fracx = abs(x-xrange(1))/Lx;
     fracy = abs(y-yrange(1))/Ly;
     
-    nx = round(fracx*N(1));
-    ny = round(fracy*N(2));
+    nx = ceil(fracx*N(1));
+    ny = ceil(fracy*N(2));
+    if(nx == 0)
+       nx = 1; 
+    end
+    if(ny == 0)
+       ny = 1; 
+    end
 
     
 end

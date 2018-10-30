@@ -1,14 +1,14 @@
-function [A,b, omega, Sxf, Dxf, Dyf, sxf, syf,trun] = solveTM_matrices(wvlen, xrange, yrange, eps_r, Jz, Npml)
+function [A,b, omega, Sxf, Dxf, Dyf, sxf, syf] = solveTM_matrices(wvlen, xrange, yrange, eps_r, Jz, Npml)
 %% Input Parameters
 % wvlen: wavelength in L0
 % xrange: [xmin xmax], range of domain in x-direction including PML
 % yrange: [ymin ymax], range of domain in y-direction including PML
 % eps_r: Nx-by-Ny array of relative permittivity
-% Mz: Nx-by-Ny array of magnetic current source density
+% Jz: Nx-by-Ny array of magnetic current source density
 % Npml: [Nx_pml Ny_pml], number of cells in x- and y-normal PML
 
 %% Output Parameters
-% Hz, Ex, Ey: Nx-by-Ny arrays of H- and E-field components
+% Ez, Hx, Hy: Nx-by-Ny arrays of H- and E-field components
 % dL: [dx dy] in L0
 % A: system matrix of A x = b
 % omega: angular frequency for given wvlen
@@ -79,10 +79,10 @@ Jz = sparse(Jz);
 N = [Nx, Ny];
 dL = [dx dy]; % Remember, everything must be in SI units beforehand
 
-Dxf = createDws_dense('x', 'f', dL, N); 
-Dyf = createDws_dense('y', 'f', dL, N);
-Dyb = createDws_dense('y', 'b', dL, N); 
-Dxb = createDws_dense('x', 'b', dL, N); 
+Dxf = createDws('x', 'f', dL, N); 
+Dyf = createDws('y', 'f', dL, N);
+Dyb = createDws('y', 'b', dL, N); 
+Dxb = createDws('x', 'b', dL, N); 
 Dxf_pml = Sxf^-1*Dxf; 
 Dyf_pml = Syf^-1*Dyf;
 Dyb_pml = Syb^-1*Dyb; 

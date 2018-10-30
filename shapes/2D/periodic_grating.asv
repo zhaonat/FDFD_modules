@@ -1,0 +1,88 @@
+
+
+classdef periodic_grating < handle
+   %doesn't really make sense to define a single unit cell for most cases
+   % also, this should be able to produce a single cell domain
+    
+   properties
+       N
+       xrange
+       yrange
+       epsilon
+       
+       num_cells
+       lattice_constant
+       eps1 % epsilon corresponding to 1-fill_fraction
+       eps2 % epsilon corresponding to fill_fraction
+       thickness
+       x_pos
+       y_pos
+       fill_factor % defines the ratio of eps2 to eps1
+       
+       %% we want to be able to efficiently determine locatio specific 
+       % information about this structure, particularly coord to grid for
+       % source insertion or placement...
+       
+   end
+   
+   methods
+        function [obj] = periodic_grating(xrange, yrange, N)
+           obj.N = N;
+           obj.xrange = xrange;
+           obj.yrange=  yrange;
+           obj.epsilon =ones(N); 
+           
+        end
+        
+        % this is the main function to use to generate a periodic
+        % grating...
+        function [] = add_grating_array(obj, num_cells, lattice_constant, ...
+                thickness, epsilon, fill_factor)
+            obj.eps1 = epsilon(1);
+            obj.eps2 = epsilon(2);
+            obj.lattice_constant = lattice_constant;
+            obj.num_cells = num_cells;
+            L = [diff(xrange), diff(yrange)];
+            
+            for i = 0:obj.num_cells-1
+               x_center = (i)*lattice_constant+(lattice_constant/2);
+               obj.add_grating(L, epsilon_diel, epsilon_metal, ...
+                    fill_factor, thickness, y_center, x_center, lattice_constant);
+            end
+            
+        end
+        
+        %% helper function adds a single unit cell
+        function [] = ...
+                add_grating(obj, L_unit_cell, epsilon_diel, epsilon_metal, ...
+            fill_factor, thickness, y_center, x_center, lattice_constant)
+            
+            Nx = obj.N(1); Ny = obj.N(2);
+            Lx = L_unit_cell(1); Ly = L_unit_cell(2);
+            %should we have a standardized method for converting physical
+            %measures to node measures?
+            lattice_n = (lattice_constant/L_unit_cell(1))*(obj.N(1));
+
+            nxcenter = round(Nx*x_center/Lx);
+            nycenter = round(Ny*y_center/Ly);
+
+            metal_size = fill_factor*lattice_n;
+            halfx = round(metal_size/2);
+            lat_half = round(lattice_n/2);
+
+            grating_size = round(Ny*(thickness/Ly));
+            halfy = round(grating_size/2);
+            %metallic center
+            obj.eps(nxcenter-halfx: nxcenter+halfx, nycenter-halfy:nycenter+halfy) = epsilon_metal;
+            obj.eps(nxcenter-lat_half+1:nxcenter-halfx, nycenter-halfy:nycenter+halfy) = epsilon_diel;
+            obj.eps(nxcenter+halfx:nxcenter+lat_half+1, nycenter-halfy:nycenter+halfy) = epsilon_diel;
+
+            % sizing enforcement
+            obj.eps = obj.eps(1:Nx, 1:Ny);
+% 
+%             nybounds = [nycenter-halfy, nycenter+halfy];
+%             metal_bounds_nx = [nxcenter-halfx, nxcenter+halfx];
+
+        end       
+   end
+end

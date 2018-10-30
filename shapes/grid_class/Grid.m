@@ -8,11 +8,10 @@ classdef Grid
        dL
     end
     methods
-      function obj = Grid(xrange, yrange, N, Npml)
+      function obj = Grid(xrange, yrange, N)
         obj.xrange = xrange;
         obj.yrange = yrange;
         obj.N = N;
-        obj.Npml = Npml;
         obj.dL(1) = diff(xrange)/N(1);
         obj.dL(2) = diff(yrange)/N(2);
       end

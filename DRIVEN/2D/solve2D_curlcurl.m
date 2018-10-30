@@ -1,6 +1,8 @@
 function [Ex, Ey, Ez, Hx, Hy, Hz, A, omega,b, Sxf, Dxf, Dyf, sxf, syf,trun] = ...
-    solve2D_EigenEngine(wvlen, xrange, yrange, eps_r, JCurrentVector, Npml)
-   
+    solve2D_curlcurl(wvlen, xrange, yrange, eps_r, JCurrentVector, Npml)
+    % SOLUTION  using full 3D curl curl operator... just for demonstration
+    % don't actually use this for 2D simulations.
+    
     %% Input Parameters
     % wvlen: wavelength in L0
     % xrange: [xmin xmax], range of domain in x-direction including PML
@@ -95,10 +97,10 @@ function [Ex, Ey, Ez, Hx, Hy, Hz, A, omega,b, Sxf, Dxf, Dyf, sxf, syf,trun] = ..
     Dyf = createDws_dense('y', 'f', dL, N);
     Dyb = createDws_dense('y', 'b', dL, N); 
     Dxb = createDws_dense('x', 'b', dL, N); 
-    Dxf_pml = Sxf^-1*Dxf; 
-    Dyf_pml = Syf^-1*Dyf;
-    Dyb_pml = Syb^-1*Dyb; 
-    Dxb_pml = Sxb^-1*Dxb; 
+    Dxf= Sxf^-1*Dxf; 
+    Dyf = Syf^-1*Dyf;
+    Dyb = Syb^-1*Dyb; 
+    Dxb= Sxb^-1*Dxb; 
     
     %% Construct Wonsoek's Accelerator
     GradDiv = [Dxf_pml*Dxf_pml Dxf_pml*Dyf_pml zeros(M); Dyf_pml*Dxf_pml Dyf_pml*Dyf_pml zeros(M); ...

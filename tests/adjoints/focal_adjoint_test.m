@@ -14,7 +14,7 @@ num_cells = 2;
 xrange = [-1 1];  % x boundaries in L0
 yrange = [-1 1];  % y boundaries in L0
 L = [diff(xrange), diff(yrange)];
-N = [170 250];  % [Nx Ny]
+N = [100 100];  % [Nx Ny]
 N0 = N; 
 Npml = 1*[15 15];  % [Nx_pml Ny_pml]
 
@@ -34,12 +34,10 @@ Mz = zeros(N);
 Mz(njx, njy) = 1;
 
 %% define coordinate to optimize
-opt_coord = [-0.4, 0.9];
+opt_coord = [0, 0.9];
 [nox, noy] = coord_to_grid(opt_coord, N, xrange, yrange);
-opt_coord = [0.4, 0.9];
-[nox1, noy1] = coord_to_grid(opt_coord, N, xrange, yrange);
 eta = zeros(N);
-eta(nox, noy) = 1; eta(nox1, noy1) = 1;
+eta(nox, noy) = 1; 
 eta = eta(:);
 
 %% define optimization mask
@@ -52,8 +50,10 @@ epochs = 100;
 for t =1:epochs
 
     %% get source field
+    tic
     [Ez, Hx, Hy, A, omega,b]  = ...
     solveTM(L0, wvlen, xrange, yrange, eps_r, Mz, Npml);
+    toc
     u0 = Ez(:);
 
     %% objective
@@ -71,7 +71,7 @@ for t =1:epochs
     derivative_of_objective = full(-omega^2*(eps0/L0)*real(Ez.*Ezu));
     
     %% update epsilon
-    alpha = 1e-2;
+    alpha = 1e-3;
     alpha = alpha*0.99;
     new_eps = alpha*derivative_of_objective;
     
@@ -81,7 +81,7 @@ for t =1:epochs
     if(mod(t,4) == 0)
         figure(); 
         subplot(121)
-        visreal(Ez, xrange, yrange);
+        visabs(Ez, xrange, yrange);
         subplot(122);
         visreal(eps_r, xrange, yrange);
         caxis([-1,6])
