@@ -3,7 +3,8 @@
 classdef air_core_structure < handle
    %doesn't really make sense to define a single unit cell for most cases
    % also, this should be able to produce a single cell domain
-    
+   % really just a multi-grating structure... but the key field is this
+   % wall_coords, which specifies the air core location
    % should be able to insert a subclass... as the wall material
    properties
        N
@@ -12,26 +13,21 @@ classdef air_core_structure < handle
        epsilon
        Lpml
        
-       num_cells
-       lattice_constant
-       eps1 % epsilon corresponding to 1-fill_fraction
-       eps2 % epsilon corresponding to fill_fraction
-       thickness
-       x_pos
-       y_pos       % center line of the periodic array
-       fill_factor % defines the ratio of eps2 to eps1
-       
        wall_materials
-       wall_coords
+       wall_coords     % [[y0, yf]], y0 and yf of the air core
+       y_centers
        
        %% we want to be able to efficiently determine locatio specific 
        % information about this structure, particularly coord to grid for
        % source insertion or placement...
        
+       %% this function really shouldn't give a damn about the materials that are 
+       % used in the wall
+       
    end
    
    methods
-        function [obj] = periodic_grating(xrange, yrange, N, Lpml)
+        function [obj] = air_core_structure(xrange, yrange, N, Lpml)
            obj.N = N;
            obj.xrange = xrange;
            obj.yrange=  yrange;
@@ -41,51 +37,79 @@ classdef air_core_structure < handle
            
         end
         
-        % this is the main function to use to generate a periodic
-        % grating...
-        function [] = add_grating_array(obj, num_cells, lattice_constant, ...
-                thickness, epsilon, fill_factor, y_center)
-            obj.eps1 = epsilon(1);
-            obj.eps2 = epsilon(2);
-            obj.lattice_constant = lattice_constant;
-            obj.num_cells = num_cells;
-            obj.y_pos = y_center;
-            assert(num_cells*lattice_constant <= diff(obj.xrange), 'num cells is too large or lattice constant too large');
-            for i = 0:obj.num_cells-1
-               x_center = obj.xrange(1)+(i)*lattice_constant+(lattice_constant/2)
-               obj.add_grating(epsilon(1), epsilon(2), ...
-                    fill_factor, thickness, y_center, x_center, lattice_constant);
+        % the air core structure will work as follows
+        % we give it the correct wall epsilon
+        % note that wall_epsilon is created before hadn with r_start r_end
+        % in mind
+        % it seems weird... that me, the user has to specify the entire
+        % part of the grid that contains the wall before even specifying
+        % this obj?       
+        
+        %% if I do this...then air core thickness, location in grid is already
+        %% FIXED, 
+        function [] = add_wall(obj, r_start, r_end, wall_epsilon)
+            %helper function
+            [rnx, rny] = coord_to_grid(r_start, obj.N, obj.xrange, obj.yrange);
+            [rnxf, rnyf] = coord_to_grid(r_end, obj.N, obj.xrange, obj.yrange);
+            
+            obj.epsilon(rnx:rnxf, rny:rnyf) = wall_epsilon;
+            %store air coord coordinates
+            obj.wall_materials{length(obj.wall_materials)+1} = wall_epsilon;
+            obj.wall_coords{length(obj.wall_coords)+1} = {r_start, r_end};
+        end
+        
+        
+        function [] = build_core(obj, r_cell, wall_materials)
+            obj.y_centers = [obj.y_centers, y_center];
+            % wall_materials : 2x1 cell, each containing an epsilon subgrid
+            % r_cell         : 2x1 cell, each containing an r_start, r_end.
+            obj.add_wall(r_start, r_end, wall_materials{1}) 
+            obj.add_wall(r_start, r_end, wall_materials{2})
+            
+        end
+        
+        function []= build_multi_core(y_centers)
+            % should use the build_core function...but potential issue with 
+            % shared walls
+            for y_center = y_centers
+               build_core
             end
             
         end
         
-        %% helper function adds a single unit cell
-        function [] = ...
-                add_grating(obj, epsilon_diel, epsilon_metal, ...
-            fill_factor, thickness, y_center, x_center, lattice_constant)
+        function [] = build_uniform_wall_core(obj,y_center, core_thickness, wall_thickness, wall_materials)
+           % we can easily define a simple function which has a uniform
+           % y_center, air_core_thickness, wall_thicknesses
+           obj.y_centers = [obj.y_centers, y_center];
+           obj.wall_materials = wall_materials
+           %wall boundaries touching the core
+           y_lower_wall = y_center-core_thickness/2;
+           y_upper_wall = y_center+core_thickness/2;
+           
+           %outer wall boundaries;
+           y_lower_wall2 =y_lower_wall-wall_thickness;
+           y_upper_wall2 = y_upper_wall+wall_thickness;
+           
+           % convention for wall coords {xcoords, ycoords} vs {coord1,
+           % coord2}....ugh...
+           obj.wall_coords{1} = {obj.xrange, [y_lower_wall, y_lower_wall2]};
+           obj.wall_coords{2} = {obj.xrange, [y_upper_wall, y_upper_wall2]};
+           
+           % convert this to grid points
+           %ny_center = coord_to_grid([0, y_center], obj.N, obj.xrange, obj.yrange);
+           
+           [~,ny_lower_wall] = coord_to_grid([0, y_lower_wall], obj.N, obj.xrange, obj.yrange);
+           [~,ny_upper_wall] = coord_to_grid([0, y_upper_wall], obj.N, obj.xrange, obj.yrange);
+
+           [~,ny_lower_wall2] = coord_to_grid([0, y_lower_wall2], obj.N, obj.xrange, obj.yrange);
+           [~,ny_upper_wall2] = coord_to_grid([0, y_upper_wall2], obj.N, obj.xrange, obj.yrange);
+           
+           obj.epsilon(:,ny_lower_wall2:ny_lower_wall) = wall_materials(1);
+           obj.epsilon(:,ny_upper_wall:ny_upper_wall2) = wall_materials(2);
+           
+        end
         
-            L = [diff(obj.xrange), diff(obj.yrange)];
-            lattice_n = (lattice_constant/L(1))*(obj.N(1))
-
-            [nxcenter, nycenter] =...
-                coord_to_grid([x_center, y_center],obj.N, obj.xrange,obj.yrange)
-            
-            metal_size = fill_factor*lattice_n;
-            halfx = floor(metal_size/2); %floor is the correct option
-            lat_half = floor(lattice_n/2)
-
-            grating_size = round(obj.N(2)*(thickness/L(2)));
-            halfy = round(grating_size/2);
-
-            %% eps2 part
-            obj.epsilon(nxcenter-halfx: nxcenter+halfx, nycenter-halfy:nycenter+halfy) = epsilon_metal;
-            %% eps1 parts
-            obj.epsilon(nxcenter-lat_half:nxcenter-halfx+1, nycenter-halfy:nycenter+halfy) = epsilon_diel;
-            obj.epsilon(nxcenter+halfx:nxcenter+lat_half, nycenter-halfy:nycenter+halfy) = epsilon_diel;
-% 
-%             nybounds = [nycenter-halfy, nycenter+halfy];
-%             metal_bounds_nx = [nxcenter-halfx, nxcenter+halfx];
-
-        end       
+        
+      
    end
 end

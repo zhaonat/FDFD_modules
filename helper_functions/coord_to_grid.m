@@ -1,10 +1,13 @@
 
 
 function [nx,ny] = coord_to_grid(coordinate, N, xrange, yrange)
-    %converts any coordinate to an equivelant index (i,j)
-    % N = [Nx,Ny]
-    % coordinate = [x,y]
-    % xrange = [xmin, ymin]
+    %converts any coordinate to an equivelant index (i,j) on the
+    %discretized grid
+    % param: N = [Nx,Ny]
+    % param: coordinate = [x,y]
+    % param: xrange = [xmin, ymax]
+    % param: yrange = [ymin, ymax]
+
     x = coordinate(1);
     y = coordinate(2);
     Lx = diff(xrange); Ly = diff(yrange);

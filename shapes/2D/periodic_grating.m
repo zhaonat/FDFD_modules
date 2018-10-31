@@ -3,7 +3,7 @@
 classdef periodic_grating < handle
    %doesn't really make sense to define a single unit cell for most cases
    % also, this should be able to produce a single cell domain
-    
+   % structure also assumes that the grating periodicity parallel x direction
    properties
        N
        xrange
@@ -16,8 +16,8 @@ classdef periodic_grating < handle
        eps1 % epsilon corresponding to 1-fill_fraction
        eps2 % epsilon corresponding to fill_fraction
        thickness
-       x_pos
-       y_pos       % center line of the periodic array
+       x_pos       % unused -> grating starts at x = 0.
+       y_pos       % vertical center line of the periodic array
        fill_factor % defines the ratio of eps2 to eps1
        
        %% we want to be able to efficiently determine locatio specific 
@@ -49,7 +49,7 @@ classdef periodic_grating < handle
             obj.y_pos = y_center;
             assert(num_cells*lattice_constant <= diff(obj.xrange), 'num cells is too large or lattice constant too large');
             for i = 0:obj.num_cells-1
-               x_center = obj.xrange(1)+(i)*lattice_constant+(lattice_constant/2)
+               x_center = obj.xrange(1)+(i)*lattice_constant+(lattice_constant/2);
                obj.add_grating(epsilon(1), epsilon(2), ...
                     fill_factor, thickness, y_center, x_center, lattice_constant);
             end

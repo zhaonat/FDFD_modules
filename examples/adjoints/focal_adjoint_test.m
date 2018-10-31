@@ -21,6 +21,7 @@ Npml = 1*[15 15];  % [Nx_pml Ny_pml]
 [xrange, yrange, N, dL, Lpml] = domain_with_pml(xrange, yrange, N, Npml);  % domain is expanded to include PML
 Nx = N(1); Ny = N(2);
 M = prod(N);
+
 %% set up initial epsilon
 eps_r= ones(N);
 
