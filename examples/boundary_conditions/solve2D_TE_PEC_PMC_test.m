@@ -14,9 +14,9 @@ yrange = 1.5*[-1 1];  % y boundaries in L0
 % will never be perfectly in the center of the grid?? which is weird...
 % espeically consideri
 
-Nx = 600; Ny = Nx;
+Nx = 301; Ny = Nx;
 N = [Nx Ny];  % [Nx Ny]
-Npml = 0*[10 10];  % [Nx_pml Ny_pml]
+Npml = 0*[0 10];  % [Nx_pml Ny_pml]
 mu0 = 4*pi*10^-7*L0; 
 eps0 = 8.85*10^-12*L0;
 c0 = 1/sqrt(mu0*eps0);
@@ -25,18 +25,9 @@ c0 = 1/sqrt(mu0*eps0);
 %% Set up the permittivity.
 eps_r = ones(N);
 
-%% Fancy Structure
-
-% eps_r(Nx/2:Nx/2+2,:) = 12;
-% for j = 1:Ny
-%     if(mod(j,10) == 0 || mod(j,11) == 0 || mod(j, 12) == 0)
-%        eps_r(Nx/2:Nx/2+10,j) = 0; 
-%     end
-% end
-
 %% Set up the 1agnetic current source density.
 Jz = zeros(N);
-ind_src = [N(1)/2 N(2)/2];%ceil(N/2);  % (i,j) indices of the center cell; Nx, Ny should be odd
+ind_src = ceil(N/2);  % (i,j) indices of the center cell; Nx, Ny should be odd
 Jz(ind_src(1), ind_src(2)) = 1;
 %a line source is also useful
 %Jz(ind_src(1), :)) = 1;
@@ -113,11 +104,11 @@ Jz(ind_src(1), ind_src(2)) = 1;
     Dxf = createDws('x', 'f', dL, N); 
     Dyf = createDws('y', 'f', dL, N);
     Dyb = createDws('y', 'b', dL, N); 
-    Dxb = createDws_dirichlet_2D('x', 'b', dL, N); 
-    Dxf_pml = Sxf^-1*Dxf; 
-    Dyf_pml = Syf^-1*Dyf;
-    Dyb_pml = Syb^-1*Dyb; 
-    Dxb_pml = Sxb^-1*Dxb;
+    Dxb = createDws('x', 'b', dL, N); 
+    Dxf = Sxf^-1*Dxf; 
+    Dyf = Syf^-1*Dyf;
+    Dyb = Syb^-1*Dyb; 
+    Dxb = Sxb^-1*Dxb;
     
     %% construct PEC mask
     xn = 1:N(1);
@@ -141,10 +132,10 @@ Jz(ind_src(1), ind_src(2)) = 1;
 
     %% Construct the matrix A, everything is in 2D
     % this is the TE mode...
-    A =  PEC_mask_y*PEC_mask_x*(Dxb_pml*(Tmy^-1)*Dxf_pml+ ...
-        Dyb_pml*(Tmx^-1)*Dyf_pml)*PEC_mask_x*PEC_mask_y+ omega^2*Tepz;
+    A =  PEC_mask_y*PEC_mask_x*(Dxb*(Tmy^-1)*Dxf+ ...
+        Dyb*(Tmx^-1)*Dyf)*PEC_mask_x*PEC_mask_y+ omega^2*Tepz;
     %A = PEC_mask_y*PEC_mask_x*A*PEC_mask_x*PEC_mask_y; 
-    A0 = (Dxb_pml*(Tmy^-1)*Dxf_pml + Dyb_pml*(Tmx^-1)*Dyf_pml) + omega^2*Tepz;
+    A0 = (Dxb*(Tmy^-1)*Dxf + Dyb*(Tmx^-1)*Dyf) + omega^2*Tepz;
 
     %% construct the matrix b, everything is in 2D
     b = 1i*omega*Jz;

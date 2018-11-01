@@ -58,8 +58,7 @@ classdef periodic_grating < handle
         end
         
         %% helper function adds a single unit cell
-        % we can hijack this function by externally transposing all the
-        % inputs...
+        % we can hijack this function 
         function [] = ...
                 add_horizontal_grating(obj, epsilon_diel, epsilon_metal, ...
             fill_factor, thickness, y_center, x_center, lattice_constant)

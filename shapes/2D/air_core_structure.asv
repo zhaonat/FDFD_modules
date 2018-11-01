@@ -1,0 +1,98 @@
+
+
+classdef air_core_structure < handle & periodic_grating
+   % this should really inherit from periodic grating
+   % since this is, in its most complex form, just a set of periodic
+   % gratings. However, we should not inherit it periodic grating because
+   % then the field
+   
+   % really just a multi-grating structure... but the key field is this
+   % wall_coords, which specifies the air core location
+   % should be able to insert a subclass... as the wall material
+   
+   % all methods and properties are now inherited from periodic grating
+   properties
+       
+       wall_coords     % [[y0, yf]], y0 and yf of the air core
+       y_centers
+             
+   end
+   
+   methods
+        function [obj] = air_core_structure(xrange, yrange, N, Lpml)
+             obj@periodic_grating(xrange, yrange, N,Lpml)
+        end
+    
+        
+        %% if I do this...then air core thickness, location in grid is already
+        %% FIXED, 
+        
+        function [] = build_grating_core(obj, air_core_thickness, y_core_center, ...
+                wall_properties_lower, wall_properties_upper)
+            
+            assert(length(wall_properties_lower) == 5, 'make sure your wall properties is in order')
+                  assert(length(wall_properties_lower) == 5, 'make sure your wall properties is in order')
+
+            [num_cells, lattice_constant, ...
+                            thickness, epsilon_array, fill_factor] = wall_properties_lower{:};
+                        
+            
+            obj.y_centers = [obj.y_centers, y_core_center];
+            
+            lower_grating_center_y = y_core_center - air_core_thickness/2-thickness/2;
+            upper_grating_center_y = y_core_center + air_core_thickness/2+thickness/2;
+            
+            obj.add_grating_array(num_cells, lattice_constant, ...
+                            thickness, epsilon_array, fill_factor, lower_grating_center_y)
+            obj.add_grating_array(num_cells, lattice_constant, ...
+                thickness, epsilon_array, fill_factor, upper_grating_center_y)
+        end
+        
+        function []= build_multi_core(obj, y_centers, core_thicknesses, wall_properties)
+            % should use the build_core function...but potential issue with 
+            % shared walls
+            for i = 1:length(y_centers) 
+               y_core_center = y_centers(i);
+               air_core_thickness = core_thicknesses(i);
+               obj.build_grating_core(air_core_thickness, y_core_center, ...
+                wall_properties)
+            end
+            
+        end
+        
+        function [] = build_uniform_wall_core(obj,y_center, core_thickness, wall_thickness, wall_materials)
+           % we can easily define a simple function which has a uniform
+           % y_center, air_core_thickness, wall_thicknesses
+           obj.y_centers = [obj.y_centers, y_center];
+           obj.wall_materials = wall_materials;
+           %wall boundaries touching the core
+           y_lower_wall = y_center-core_thickness/2;
+           y_upper_wall = y_center+core_thickness/2;
+           
+           %outer wall boundaries;
+           y_lower_wall2 =y_lower_wall-wall_thickness;
+           y_upper_wall2 = y_upper_wall+wall_thickness;
+           
+           % convention for wall coords {xcoords, ycoords} vs {coord1,
+           % coord2}....ugh...
+           obj.wall_coords{1} = {obj.xrange, [y_lower_wall, y_lower_wall2]};
+           obj.wall_coords{2} = {obj.xrange, [y_upper_wall, y_upper_wall2]};
+           
+           % convert this to grid points
+           %ny_center = coord_to_grid([0, y_center], obj.N, obj.xrange, obj.yrange);
+           
+           [~,ny_lower_wall] = coord_to_grid([0, y_lower_wall], obj.N, obj.xrange, obj.yrange);
+           [~,ny_upper_wall] = coord_to_grid([0, y_upper_wall], obj.N, obj.xrange, obj.yrange);
+
+           [~,ny_lower_wall2] = coord_to_grid([0, y_lower_wall2], obj.N, obj.xrange, obj.yrange);
+           [~,ny_upper_wall2] = coord_to_grid([0, y_upper_wall2], obj.N, obj.xrange, obj.yrange);
+           
+           obj.epsilon(:,ny_lower_wall2:ny_lower_wall) = wall_materials(1);
+           obj.epsilon(:,ny_upper_wall:ny_upper_wall2) = wall_materials(2);
+           
+        end
+        
+        
+      
+   end
+end

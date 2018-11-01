@@ -3,15 +3,15 @@
 % we are solving for the Hz field in the scalar equation, but the Ex field
 % and Ey fields are the tangential fields and they are only tangential to
 % certain boundaries (not all of them, so doing a mask seems wrong)
-
+% 
 close all
 clear all 
 
 %% Parameter Setup
 L0 = 1e-6;  % length unit: microns
 wvlen = 1;  % wavelength in L0
-xrange = 1.5*[-1 1];  % x boundaries in L0
-yrange = 1.5*[-1 1];  % y boundaries in L0
+xrange = 2*[-1 1];  % x boundaries in L0
+yrange = 2*[-1 1];  % y boundaries in L0
 
 %% ASSYMETRIC FIELD PATTERNS CAN RESULT IF THE SOURCE IS NOT PERFECTLY CENTERED
 % (which IT WON'T BE EVEN IF YOU PUT IT AT THE CENTRAL NODE POINT
@@ -19,9 +19,9 @@ yrange = 1.5*[-1 1];  % y boundaries in L0
 % will never be perfectly in the center of the grid?? which is weird...
 % espeically consideri
 
-Nx = 600; Ny = Nx;
+Nx = 301; Ny = Nx;
 N = [Nx Ny];  % [Nx Ny]
-Npml = 0*[10 10];  % [Nx_pml Ny_pml]
+Npml = 0*[10 0];  % [Nx_pml Ny_pml]
 mu0 = 4*pi*10^-7*L0; 
 eps0 = 8.85*10^-12*L0;
 c0 = 1/sqrt(mu0*eps0);
@@ -41,7 +41,7 @@ eps_r = ones(N);
 
 %% Set up the 1agnetic current source density.
 Mz = zeros(N);
-ind_src = [N(1)/2 N(2)/2];%ceil(N/2);  % (i,j) indices of the center cell; Nx, Ny should be odd
+ind_src = ceil(N/2);  % (i,j) indices of the center cell; Nx, Ny should be odd
 Mz(ind_src(1), ind_src(2)) = 1;
 %a line source is also useful
 %Jz(ind_src(1), :)) = 1;
@@ -118,11 +118,11 @@ Mz(ind_src(1), ind_src(2)) = 1;
     Dxf = createDws('x', 'f', dL, N); 
     Dyf = createDws('y', 'f', dL, N);
     Dyb = createDws('y', 'b', dL, N); 
-    Dxb = createDws_dirichlet_2D('x', 'b', dL, N); 
-    Dxf_pml = Sxf^-1*Dxf; 
-    Dyf_pml = Syf^-1*Dyf;
-    Dyb_pml = Syb^-1*Dyb; 
-    Dxb_pml = Sxb^-1*Dxb;
+    Dxb = createDws('x', 'b', dL, N); 
+    Dxf = Sxf^-1*Dxf; 
+    Dyf = Syf^-1*Dyf;
+    Dyb = Syb^-1*Dyb; 
+    Dxb = Sxb^-1*Dxb;
     
     %% construct PEC mask
     xn = 1:N(1);
@@ -152,15 +152,14 @@ Mz(ind_src(1), ind_src(2)) = 1;
     
     %% ==================================================================
     %% ==================================================================
-
-
+    
     %% Construct the matrix A, everything is in 2D
     % this is the TE mode...
-    A =  PMC_mask_y*PMC_mask_x*(Dxb_pml*(Tepx^-1)*Dxf_pml+ ...
-        Dyb_pml*(Tepy^-1)*Dyf_pml)*PMC_mask_x*PMC_mask_y+ omega^2*Tmz;
+    A =  PMC_mask_y*PMC_mask_x*(Dxb*(Tepx^-1)*Dxf+ ...
+        Dyb*(Tepy^-1)*Dyf)*PMC_mask_x*PMC_mask_y+ omega^2*Tmz;
     %A = PEC_mask_y*PEC_mask_x*A*PEC_mask_x*PEC_mask_y; 
-    A0 = (Dxb_pml*(Tepx^-1)*Dxf_pml + Dyb_pml*(Tepy^-1)*Dyf_pml) + omega^2*Tmz;
-
+    A0 = (Dxb*(Tepx^-1)*Dxf + Dyb*(Tepy^-1)*Dyf) + omega^2*Tmz;
+    A_mask = A;
     %% construct the matrix b, everything is in 2D
     b = 1i*omega*Mz;
 
@@ -170,28 +169,27 @@ Mz(ind_src(1), ind_src(2)) = 1;
      if all(b==0)
         ez = zeros(size(b));
      else
-       %hz = A\b;
         ez = A\b;
      end
      toc
-     Ez = reshape(ez, N);
+     Hz_pec = reshape(ez, N);
 
      %% now solve for Ex and Ey
-     hx = -1/(1i*omega)*(Tmx^-1*Dyf)*ez;
-     hy = (Tmy^-1*Dxf)*ez*(1/(1i*omega));
-     Hy = reshape(hy,N);
-     Hx = reshape(hx,N);
+     ex = -1/(1i*omega)*(Tmx^-1*Dyf)*ez;
+     ey = (Tmy^-1*Dxf)*ez*(1/(1i*omega));
+     Ey = reshape(ey,N);
+     Ex = reshape(ex,N);
 
 %% SOLVER CODE ENDS
 
  
  figure;
- visabs((Ez), xrange, yrange)
+ visabs((Hz_pec), xrange, yrange)
  figure;
- visabs((Hy), xrange, yrange)
+ visabs((Ey), xrange, yrange)
  figure;
- visabs((Hx), xrange, yrange)
+ visabs((Ex), xrange, yrange)
  
- moviereal(Ez, xrange, yrange)
+ moviereal(Hz_pec, xrange, yrange)
  
  

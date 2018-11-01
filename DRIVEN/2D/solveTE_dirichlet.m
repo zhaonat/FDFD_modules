@@ -1,4 +1,8 @@
-function [Hz, Ex, Ey, A, omega,b, Sxf, Dxf, Dyf, sxf, syf,trun] = ...
+%% NOT QUITE THERE YET...
+% USE PEC MASK...
+
+
+function [Hz, Ex, Ey, A, omega,b, Sxf, Dxf, Dxb, Dyf, Dyb] = ...
     solveTE_dirichlet(L0, wvlen, xrange, yrange, eps_r, Mz, Npml)
 %% Input Parameters
 % wvlen: wavelength in L0
@@ -28,11 +32,17 @@ N = size(eps_r);  % [Nx Ny] THIS IS THE POINT WHERE THE GRID SIZE IS DETERMINED
 omega = 2*pi*c0/(wvlen);  % angular frequency in rad/sec
 
 %% Set up the permittivity and permeability in the domain.
+
 % bwdmean does nearest neighbor averaging (smoothes out stuff)
 eps_x = bwdmean_w(eps0 * eps_r, 'y');  % average eps for eps_x
 eps_y = bwdmean_w(eps0 * eps_r, 'x');  % average eps for eps_y
 %these are fully dense matrices...
 
+%% FOR THE DIRICHLET OR PMC case, we have to 0 out the edges...
+% eps_x(:,1) = 0; eps_x(:,end) = 0;
+% eps_x(1,:) = 0; eps_x(end,:) = 0;
+% eps_y(:,1) = 0; eps_y(:,end) = 0;
+% eps_y(1,:) = 0; eps_y(end,:) = 0;
 %currently, eps_x and eps_y are ultra-dense, which isn't right...
 
 %% Set up number of cells
@@ -69,15 +79,14 @@ Syb=spdiags(Syb(:),0,M,M);
 %create a diagonal block matrix of ep and mu...
 epxList = reshape(eps_x,M,1);
 epyList = reshape(eps_y,M,1);
-Tepx = spdiags(epxList,0,M,M); % creates an MxM matrix, which is the correct size,
+invTepx = spdiags(1./epxList,0,M,M); % creates an MxM matrix, which is the correct size,
 %the M entries in epsList is put on the diagonals
-Tepy = spdiags(epyList,0,M,M);
+invTepy = spdiags(1./epyList,0,M,M);
 Tmz = mu0*speye(M); %in most cases, permeability is that of free-space
 
 %% Create Magnetic vector Mz (source profile determined by Mz input)
 % dimension = M*1
 size(Mz)
-M
 Mz = reshape(Mz,M,1);
 Mz = sparse(Mz);
 
@@ -86,18 +95,14 @@ Mz = sparse(Mz);
 N = [Nx, Ny];
 dL = [dx dy]; % Remember, everything must be in SI units beforehand
 
-Dxf = createDws_dirichlet('x', 'f', dL, N); 
-Dyf = createDws_dirichlet('y', 'f', dL, N);
-Dyb = createDws_dirichlet('y', 'b', dL, N); 
-Dxb = createDws_dirichlet('x', 'b', dL, N); 
-Dxf_pml = Sxf^-1*Dxf; 
-Dyf_pml = Syf^-1*Dyf;
-Dyb_pml = Syb^-1*Dyb; 
-Dxb_pml = Sxb^-1*Dxb; 
+Dxf = Sxf\createDws_dirichlet_2D('x', 'f', dL, N); 
+Dyf = Syf\createDws_dirichlet_2D('y', 'f', dL, N);
+Dyb = Syb\createDws_dirichlet_2D('y', 'b', dL, N); 
+Dxb = Sxb\createDws_dirichlet_2D('x', 'b', dL, N); 
 
 
 %% Construct the matrix A, everything is in 2D
-A = Dxf_pml*(Tepx^-1)*Dxb_pml + Dyf_pml*(Tepy^-1)*Dyb_pml + omega^2*Tmz;
+A = Dxf*(invTepx)*Dxb + Dyf*(invTepy)*Dyb+ omega^2*Tmz;
 % note a warning about ill-conditioned matrices will pop up here, but
 % for our purposes, it is okay.
 
@@ -117,8 +122,8 @@ t0 =cputime
  Hz = reshape(hz, N);
 
  %% now solve for Ex and Ey
- ey = (Tepx^-1*Dyb)*hz*1/(1i*omega);
- ex = 1/(1i*omega)*(Tepy^-1*Dxb)*hz;
+ ey = (invTepx*Dyb)*hz*1/(1i*omega);
+ ex = 1/(1i*omega)*(invTepy*Dxb)*hz;
  Ey = reshape(ey,N);
  Ex = reshape(ex,N);
  
