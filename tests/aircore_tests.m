@@ -1,10 +1,6 @@
 %effectively, what is different from a test and an example
 % a test must test an ultra specific functionality
-
-%% Test double class
-% exp = 'double';
-% act = ones;
-% assert(isa(act,exp))
+%% this is a test of the periodic grating and air core structure classes
 
 
 %% specify domain
@@ -13,7 +9,7 @@ L0 = 1e-6;  % length unit: microns
 wvlen = 2.0;  % wavelength in L0
 xrange = [-2 2];  % x boundaries in L0
 yrange = [-2 2];  % y boundaries in L0
-N = [400 400];  % [Nx Ny]
+N = [400 640];  % [Nx Ny]
 Npml = 0*[10 10];  % [Nx_pml Ny_pml] need to deal with the special case where both are 
 [xrange, yrange, N, dL, Lpml] = domain_with_pml(xrange, yrange, N, Npml);  % domain is expanded to include PML
 
@@ -42,9 +38,9 @@ wall_properties2 = {num_cells, lattice_constant, ...
 grating1 = periodic_grating(xrange, yrange, N, Lpml);
 grating1.add_grating_array(num_cells, lattice_constant, ...
                 thickness, epsilon_array, fill_factor, y_center)
-            
 grating1.add_grating_array(num_cells, lattice_constant, ...
                 thickness, epsilon_array, fill_factor, 0.5)
+            
 %% test the multi cor3
 y_centers = [-0.5, -0.5+0.7+thickness,-0.5+2*0.7+2*thickness];
 
@@ -59,6 +55,15 @@ for i = 1:length(air_core.grating_properties)
     line(xrange, [structure.y_pos, structure.y_pos])
     line(xrange, [structure.wall_coords(1), structure.wall_coords(1)]);
     line(xrange, [structure.wall_coords(2), structure.wall_coords(2)]);
+end
+
+figure();
+imagesc(air_core.epsilon.');
+for i = 1:length(air_core.grating_properties)
+    structure = air_core.grating_properties{i};
+    line([1,Nx], [structure.nygrid(1), structure.nygrid(1)])
+    line([1,Nx], [structure.nygrid(2), structure.nygrid(2)])
+
 end
 
 

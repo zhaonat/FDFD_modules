@@ -12,8 +12,9 @@ classdef air_core_structure < handle & periodic_grating
    
    % all methods and properties are now inherited from periodic grating
    properties       
-       y_centers
-             
+       core_centers_y
+       wall_bounds
+       
    end
    
    methods
@@ -30,6 +31,7 @@ classdef air_core_structure < handle & periodic_grating
                 'number of materials must be same as number of walls')
             
             for i = 1:length(y_centers) 
+                
                y_wall_center = y_centers(i);
                wall_properties = wall_materials_cell{i};
                [num_cells, lattice_constant, ...
@@ -38,8 +40,17 @@ classdef air_core_structure < handle & periodic_grating
                 obj.add_grating_array(num_cells, lattice_constant, ...
                     thickness, epsilon_array, fill_factor, y_wall_center)  
             end
-                 
             
+            %% extract the location of the core centers
+            for i = 1:length(y_centers)-1
+                ywall1 = obj.grating_properties{i}.y_pos;
+                ywall2 = obj.grating_properties{i+1}.y_pos;
+                gp = obj.grating_properties;
+                %get mean 
+                obj.core_centers_y(i) = (ywall1+ywall2)/2;
+                obj.wall_bounds(i,:) = [gp{i}.wall_coords(2), gp{i+1}.wall_coords(1)];
+            end
+                
         end
         
       
