@@ -53,7 +53,8 @@ function [Ez_modes, Hx_modes, Hy_modes, eigenvals] = eigensolve_TE(L0, wvlen, xr
     %% create the derivative oeprators w/ PML
     N = [Nx, Ny];
     dL = [dx dy]; % Remember, everything must be in SI units beforehand
-   
+    
+    L = [diff(xrange), diff(yrange)];
     Dxf = createDws_bloch('x', 'f', dL, N, K_vec, L); 
     Dyf = createDws_bloch('y', 'f', dL, N, K_vec, L);
     Dyb = createDws_bloch('y', 'b', dL, N, K_vec, L); 
@@ -70,6 +71,10 @@ function [Ez_modes, Hx_modes, Hy_modes, eigenvals] = eigensolve_TE(L0, wvlen, xr
     A = -(1/mu0)*(Dxb*Dxf + Dyb*Dyf); %
     B = Tez;
     
+    %% or explicit bloch formulation
+%     Dxs_K = (Dxf_pml*Dxb_pml - 1i*K*Dxf_pml - 1i*K*Dxb_pml - K^2*speye(M));
+%     A = (Tmz*Tepz)^-1*(Dxs_K + Dyf_pml*Dyb_pml);
+
     disp('start eigensolve');
     %% eigensolver
     omega_est = 2*pi*c0/(wvlen);

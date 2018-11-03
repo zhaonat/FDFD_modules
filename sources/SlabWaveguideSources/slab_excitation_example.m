@@ -8,6 +8,7 @@ wvlen = 3.91;  % wavelength in L0
 mu0 = 4*pi*1e-7*L0;
 eps0= 8.854e-12*L0;
 c0 = 1/sqrt(mu0*eps0);
+
 %% ==================== Create Data; Directory
 Npml = [0,10];  % [Nx_pml Ny_pml] need to deal with the special case where both are 0
 xrange = 4*[-0.5, 0.5];  % x boundaries in L0

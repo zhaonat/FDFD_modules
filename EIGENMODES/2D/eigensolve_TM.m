@@ -62,12 +62,6 @@ function [Hz_modes, Ex_modes, Ey_modes, eigenvals, A] = eigensolve_TM(L0, wvlen,
     Dyb = createDws_bloch('y', 'b', dL, N, K_vec, L); 
     Dxb = createDws_bloch('x', 'b', dL, N, K_vec, L); 
 
-%     Dxf = createDws('x', 'f', dL, N); 
-%     Dyf = createDws('y', 'f', dL, N);
-%     Dyb = createDws('y', 'b', dL, N); 
-%     Dxb = createDws('x', 'b', dL, N); 
-%     Vxf = abs(createDws('x', 'f', [2 2], N)); 
-
     Dxf = Sxf\Dxf; Dyf = Syf\Dyf;
     Dyb = Syb\Dyb; Dxb = Sxb\Dxb; 
     
