@@ -24,6 +24,7 @@ x = 1:N(1);
 y = 1:N(2);
 [xx, yy] = meshgrid(x,y);
 epsilon((xx-cx).^2+(yy-cy).^2 < 50^2)=12;
+epsilon((xx-cx).^2+(yy-cy).^2 < 30^2) = 1;
 figure();
 imagesc(epsilon);
 drawnow();

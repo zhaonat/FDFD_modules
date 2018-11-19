@@ -53,6 +53,19 @@ classdef air_core_structure < handle & periodic_grating
                 
         end
         
+        
+        function [] = homogenize_material_in_pml()
+           % function which artificially homogenizes the material entering
+           % the PML
+           Lpml = obj.Lpml;
+           Npml = Lpml./dL;
+           
+           %step 1, homogenize material entering the x boundaries
+           
+           % get the material at the index of Npml(1)
+           
+           
+        end
       
    end
 end
