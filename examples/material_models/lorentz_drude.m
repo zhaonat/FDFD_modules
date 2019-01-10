@@ -31,7 +31,7 @@ loglog(omega_scan_ev, abs(real(epsilon)));
 hold on;
 loglog(omega_scan_ev, abs(imag(epsilon)));
 legend('real', 'imag')
-title('Rakic')
+title('Ag Rakic')
 xlim([0.7,5]);
 lambda_scan_palik = linspace(0.3, 2, 1000);
 xlabel('frequency (eV)')
@@ -51,7 +51,7 @@ loglog(eV_palik,abs(imag(epsilon_Palik)))
 ylim([0.01,1e3])
 xlabel('frequency (eV)')
 
-title('Palik')
+title('Ag Palik')
 
 %% =================================== Al ======================================
 %omega_scan

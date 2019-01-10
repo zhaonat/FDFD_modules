@@ -120,7 +120,7 @@ for Kx = kx_scan;
     %[U,V] = eigs(A, B, neigs, 'smallestabs');
     %find eigenmodes near desired frequency
     [U,V] = eigs(A, B, neigs, omega_est^2);
-
+    
     eigenvals = sqrt(diag(V)); %eigenvals solved are omega^2*mu0
 
     Ez_modes= cell(1);

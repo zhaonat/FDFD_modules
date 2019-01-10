@@ -1,4 +1,4 @@
-function [A,b, omega, Sxf, Dxf, Dyf, sxf, syf] = solveTM_matrices(wvlen, xrange, yrange, eps_r, Jz, Npml)
+function [A,b, omega, hx_op, hy_op, Sxf, Dxf, Dyf, sxf, syf] = solveTM_matrices(wvlen, xrange, yrange, eps_r, Jz, Npml)
 %% Input Parameters
 % wvlen: wavelength in L0
 % xrange: [xmin xmax], range of domain in x-direction including PML
@@ -96,5 +96,12 @@ A = Dxb_pml*(Tmy^-1)*Dxf_pml + Dyb_pml*(Tmx^-1)*Dyf_pml + omega^2*Tepz;
 
 %% construct the matrix b, everything is in 2D
 b = 1i*omega*Jz;
+
+%%
+% hx = -1/(1i*omega)*(Tmx^-1*Dyf_pml)*ez;
+% hy = (Tmy^-1*Dxf_pml)*ez*(1/(1i*omega));
+hx_op = -1/(1i*omega)*(Tmx^-1*Dyf_pml);
+hy_op = (Tmy^-1*Dxf_pml)*(1/(1i*omega));
+
  
 end

@@ -1,5 +1,5 @@
-function [A, b, omega, ex_op, ey_op,Dxf, Dyf,Dxb, Dyb, Tepx, Tepy ] = ...
-    solveTE_matrices(L0, wvlen, xrange, yrange, eps_r, Mz, Npml)
+function [Hz, Ex, Ey, A, A_mode, omega,b, Tepx, Tepy, Dxf, Dxb, Dyf, Dyb] = ...
+    solveTM_anisotropic(L0, wvlen, xrange, yrange, eps_r, Mz, Npml)
 %% Input Parameters
 % wvlen: wavelength in L0
 % xrange: [xmin xmax], range of domain in x-direction including PML
@@ -48,15 +48,15 @@ M = prod(N); %total number of cells
 %sx = create_sfactor('f',Nx);
 %sy = creates_factor('f',Ny);
 Nx_pml = Npml(1); Ny_pml = Npml(2);
-Nwx = Nx; Nwy = Ny;
-sxf = create_sfactor_mine(xrange,'f',omega,eps_0,mu_0,Nwx,Nx_pml);
-syf = create_sfactor_mine(yrange,'f', omega,eps_0,mu_0,Nwy,Ny_pml);
-sxb = create_sfactor_mine(xrange, 'b', omega,eps_0,mu_0, Nwx, Nx_pml);
-syb = create_sfactor_mine(yrange,'b', omega,eps_0,mu_0,Nwy,Ny_pml);
+sxf = create_sfactor_mine(xrange,'f',omega,eps_0,mu_0,Nx,Nx_pml, -12, 3.5);
+syf = create_sfactor_mine(yrange,'f', omega,eps_0,mu_0,Ny,Ny_pml,-12, 3.5);
+sxb = create_sfactor_mine(xrange, 'b', omega,eps_0,mu_0, Nx, Nx_pml,-12, 3.5);
+syb = create_sfactor_mine(yrange,'b', omega,eps_0,mu_0,Ny,Ny_pml,-12, 3.5);
 
 % now we create the matrix (i.e. repeat sxf Ny times repeat Syf Nx times)
 [Sxf, Syf] = ndgrid(sxf, syf);
 [Sxb, Syb] = ndgrid(sxb, syb);
+
 
 %Sxf(:) converts from n x n t0 n^2 x 1
 Sxf=spdiags(Sxf(:),0,M,M);
@@ -66,12 +66,34 @@ Syb=spdiags(Syb(:),0,M,M);
 
 
 %% Create the dielectric and permeability arrays (ex, ey, muz)
-%create a diagonal block matrix of ep and mu...
-epxList = reshape(eps_x,M,1);
-epyList = reshape(eps_y,M,1);
-Tepx = spdiags(epxList,0,M,M); % creates an MxM matrix, which is the correct size,
-%the M entries in epsList is put on the diagonals
-Tepy = spdiags(epyList,0,M,M);
+exx = eps0*eps_tensor{1,1}; % this has not yet been flattened out into an NM by NM matrix
+exy = eps0*eps_tensor{1,2};
+eyx = eps0*eps_tensor{2,1};
+eyy = eps0*eps_tensor{2,2};
+
+%% Set up the permittivity and permeability in the domain.
+% this should be x and y too for exx and eyy respectively 
+exx_avg = bwdmean_w(exx, 'x');  % average eps for eps_x
+eyy_avg = bwdmean_w(eyy, 'y');  % average eps for eps_y
+exy =  interpolate_array(interpolate_array(exy, 'y', 'f'), 'x','b');  % average eps for eps_x
+eyx = interpolate_array(interpolate_array(eyx, 'x', 'f'), 'y','b');  % average eps for eps_y
+determinant = (exx_avg.*eyy_avg -exy.*eyx).^-1;
+
+% flatten out
+Exx = reshape(exx,M,1);
+Eyy = reshape(eyy,M,1);
+Exy = reshape(exy,M,1);
+Eyx = reshape(eyx,M,1);
+Determinant = reshape(determinant, M,1);
+
+% convert to matrices
+Texx = spdiags(Exx,0,M,M); % creates an MxM matrix, which is the correct size,
+Teyy = spdiags(Eyy,0,M,M);
+%have to be careful...only invert nonzero exy or eyx
+Texy = spdiags(Exy, 0,M,M);
+Teyx = spdiags(Eyx, 0,M,M); %have large regions of the diagonal that are 0
+TD = spdiags(Determinant, 0,M,M);
+
 Tmz = mu0*speye(M); %in most cases, permeability is that of free-space
 
 %% Create Magnetic vector Mz (source profile determined by Mz input)
@@ -89,23 +111,32 @@ Dxf = createDws('x', 'f', dL, N);
 Dyf = createDws('y', 'f', dL, N);
 Dyb = createDws('y', 'b', dL, N); 
 Dxb = createDws('x', 'b', dL, N); 
-Dxf_pml = Sxf^-1*Dxf; 
-Dyf_pml = Syf^-1*Dyf;
-Dyb_pml = Syb^-1*Dyb; 
-Dxb_pml = Sxb^-1*Dxb; 
+Dxf_pml = Sxf\Dxf; 
+Dyf_pml = Syf\Dyf;
+Dyb_pml = Syb\Dyb; 
+Dxb_pml = Sxb\Dxb; 
 
 
 %% Construct the matrix A, everything is in 2D
-A = Dxf_pml*(Tepx^-1)*Dxb_pml + Dyf_pml*(Tepy^-1)*Dyb_pml + omega^2*Tmz;
-% note a warning about ill-conditioned matrices will pop up here, but
+A_mode = Dyf_pml*() + Dyf_pml*(Tepy^-1)*Dyb_pml;
+A = A_mode + omega^2*Tmz;
+% note a warning about ill-conditioned matrices might pop up here, but
 % for our purposes, it is okay.
 
 %% construct the matrix b, everything is in 2D
 b = 1i*omega*Mz;
 
-%% construct operators for H field reconstruction
-ex_op = 1/(1i*omega)*Tepy^-1*(Dyb_pml);
-ey_op = 1/(1i*omega)*Tepx^-1*(-Dxb_pml);
+%% solve system
+t0 =cputime
+% %% Solve the equation.
+ if all(b==0)
+ 	hz = zeros(size(b));
+ else
+ 	hz = A\b;
+ end
+ trun = cputime-t0;
+ Hz = reshape(hz, N);
+
 
  
 end

@@ -118,7 +118,6 @@ function [Hz_modes, Ex_modes, Ey_modes, eigenvals, A] = ...
     %[U,V] = eigs(A, neigs, 'smallestabs');
     %find eigenmodes near desired frequency
     [U,V] = eigs(A, neigs, omega_est^2*mu0);
-
     eigenvals = diag(V); %eigenvals solved are omega^2*mu0
     eigenvals = (1/mu0)*sqrt(eigenvals);
     

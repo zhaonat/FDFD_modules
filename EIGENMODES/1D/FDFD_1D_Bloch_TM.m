@@ -1,6 +1,6 @@
 
 
-function [Hz, ky_eigs,A] = FDFD_1D_Bloch_TM(L0, dx, epsilon, omega, Nx,Kx, n)
+function [Hz, ky_eigs,A, Dxf, Dxb, Tep_x, Teps] = FDFD_1D_Bloch_TM(L0, dx, epsilon, omega, Nx,Kx, n)
 
 % epsilon :  is an Nx by 1 array containing the dielectric profile of the waveguide array
 % n = number of eigs
@@ -41,6 +41,9 @@ Dxf = Dxf;
 
 %% formulate equation
 A = Teps*Dxf*Tep_x^-1*Dxb + Teps*omega^2*mu0;
+
+%A = sqrt(Teps)*Dxf*Tep_x^-1*Dxb*conj(sqrt(Teps)) + Teps*omega^2*mu0;
+
 
 % doing largestabs is not sufficient...
 wvlen = 2*pi*c0/omega;

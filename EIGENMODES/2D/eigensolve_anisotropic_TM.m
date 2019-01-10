@@ -86,12 +86,9 @@ function [Hz_modes, Ex_modes, Ey_modes, eigenvals,A] = eigensolve_anisotropic_TM
     Texx = spdiags(Exx,0,M,M); % creates an MxM matrix, which is the correct size,
     Teyy = spdiags(Eyy,0,M,M);
     %have to be careful...only invert nonzero exy or eyx
-    Texy = Rxf*Ryb*spdiags(Exy, 0,M,M);
-    Teyx = Ryf*Rxb*spdiags(Eyx, 0,M,M); %have large regions of the diagonal that are 0
-%     Texy = spfun(@(x) 1./x, Texy);
-%     Teyx = spfun(@(x) 1./x, Teyx);
-    Texx_avg = spdiags(reshape(exx_avg,M,1),0,M,M);
-    Teyy_avg = spdiags(reshape(eyy_avg,M,1),0,M,M);    
+    Texy = spdiags(Exy, 0,M,M)*Rxf*Ryb;
+    Teyx = spdiags(Eyx, 0,M,M)*Ryf*Rxb; %have large regions of the diagonal that are 0
+   
     %% final cell construction
     Tep = [Texx, Texy; Teyx, Teyy];
     %Tep_cell = {Texx, Texy; Teyx, Teyy};

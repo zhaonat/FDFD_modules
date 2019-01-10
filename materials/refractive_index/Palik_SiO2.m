@@ -216,4 +216,4 @@ function ep = Palik_SiO2(lambda)
             end
         end
         
-        ep = (n+i*k)^2;
+        ep = (n+1i*k)^2;

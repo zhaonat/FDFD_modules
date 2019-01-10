@@ -1,6 +1,6 @@
 
 
-function [Hz, ky_eigs,A] = FDFD_1D_Ky_eigensolve_TE(L0, dx, epsilon,...
+function [Ez, ky_eigs,A] = FDFD_1D_Ky_eigensolve_TE(L0, dx, epsilon,...
     omega, Nx, n, Npml)
 
     % epsilon :  is an Nx by 1 array containing the dielectric profile of the waveguide array
@@ -20,7 +20,7 @@ function [Hz, ky_eigs,A] = FDFD_1D_Ky_eigensolve_TE(L0, dx, epsilon,...
     Lx = Nx/dx;
     xrange = [-Lx,Lx]/2;
 
-    Tep_x = spdiags( eps0*epsilon, 'x',0,Nx,Nx); %still a Yee's grid kind of
+    Tep_x = spdiags(eps0*epsilon,0,Nx,Nx); %still a Yee's grid kind of
 
     %Tep = diag(eps0*epsilon);
 
@@ -55,7 +55,7 @@ function [Hz, ky_eigs,A] = FDFD_1D_Ky_eigensolve_TE(L0, dx, epsilon,...
     %     ex_temp = 1/(1i*omega) * Tep^-1 * Dyb * hz_temp; 
     %     ey_temp = 1/(1i*omega) * Tep^-1 * (-Dxb * hz_temp); 
 
-        Hz{i} = hz_temp; 
+        Ez{i} = hz_temp; 
     %     Ex{i} = ex_temp;
     %     Ey{i} = ey_temp;
     end
