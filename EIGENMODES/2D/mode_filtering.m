@@ -1,10 +1,10 @@
 
 
 function [filtered_modes, filtered_eigs, mask] = ...
-    mode_filtering(eigenmodes, eigenvals,  eps,...
+    mode_filtering(eigenmodes, eigenvals, ...
     structure_xbounds, structure_ybounds, L, Npml, pml_threshold)
 
-    %
+    %% assumes that xrange and yrange is [-, +] and is centered on 0
     % xlim: [x0, xf] x bounds of the STRUCTURE in PHYSICAL UNITS
     % ylim: [y0, yf] y bounds of the STRUCTURE in PHYSICAL UNITS (microns
     % or whatever)
@@ -18,14 +18,14 @@ function [filtered_modes, filtered_eigs, mask] = ...
     % 2 = pml
     % 1 = structure
     % 0 = air;
-    N = size(eps);
+    N = size(eigenmodes{1});
     Nx = N(1); Ny = N(2);
-    xc = round(Nx/2); yc = round(Ny/2);
+    Nxc = round(Nx/2); Nyc = round(Ny/2);
     x0 = structure_xbounds(1); xf = structure_xbounds(2); y0=structure_ybounds(1); yf = structure_ybounds(2);
     %convert the physical bounds to grid bounds
 
-    Nx0 = xc+round((x0/L(1))*N(1))+1; Nxf = xc+floor((xf/L(1))*N(1));
-    Ny0 = yc+round((y0/L(2))*N(2))+1; Nyf = yc+floor((yf/L(2))*N(2));
+    Nx0 = Nxc+round((x0/L(1))*N(1))+1; Nxf = Nxc+floor((xf/L(1))*N(1));
+    Ny0 = Nyc+round((y0/L(2))*N(2))+1; Nyf = Nyc+floor((yf/L(2))*N(2));
 
     %% get PML bounds
     x = 1:Nx; y = 1:Ny; % x and y are node grids

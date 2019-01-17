@@ -1,0 +1,101 @@
+%% example shows how to calculate reflection and transmission
+% using the typical example of a fabry perot
+
+close all
+clear
+%% potential applications
+% cavity mirrors: multi-frequency, lasers
+% oled mirrors
+
+%% Set up the domain parameters.
+L0 = 1e-6;  % length unit: microns
+c0 = 3e8;
+xrange = [-1 1];  % x boundaries in L0
+yrange = [-2 2];  % y boundaries in L0
+L = [diff(xrange), diff(yrange)]
+N = [100 100];  % [Nx Ny]
+Npml = 1*[0,20];  % [Nx_pml Ny_pml]
+
+[xrange, yrange, N, dL, Lpml] = domain_with_pml(xrange, yrange, N, Npml);  % domain is expanded to include PML
+Nx = N(1); Ny = N(2);
+epsilon = ones(N);
+
+within_fabry =
+
+c = 1
+wvlen_scan = linspace(0.5,2,20);
+for wvlen = wvlen_scan
+
+    k0 = 2*pi/wvlen;
+    omega_p = 0.72*pi*1e15; %omega_p was 3 which gave us good results...
+    gamma = 0; %1e13; %5.5e12; % (5.5e12 is the default)
+    omega = 2*pi*c0/wvlen*1e6;
+    epsilon_diel = 12;
+    Hz_fields = cell(1);
+    S_cell = cell(1);
+
+    %epsilon_diel = epsilon_metal
+    thickness = 0.5;
+    fill_factor = 0.2; %half metal, half dielectric
+
+    %% set up epsilon
+
+    %% Set up the magnetic current source density.
+    Mz = zeros(N);
+    ind_src = [1, Npml(2)+40];  % (i,j) indices of the center cell; Nx, Ny should be odd
+    Mz(:, ind_src(2)) = 1;
+
+    %% Solve TE (photonic), TM (practical), depends on convention equations.
+    tic
+    [Hz{c}, Ex, Ey, A, A_mode, b, T_eps_x, T_eps_y, Dyb, Dxb] = ...
+        solveTE(L0, wvlen, xrange, yrange, eps, Mz, Npml);
+    toc
+
+    Hz_fields{c} = Hz;
+
+    %% Visualize the solution.
+    % figure;
+    % visreal(Hz, xrange, yrange)
+
+    %%
+    [Sx,Sy] = poynting(Hz{c}, Ex, Ey);
+    S_cell{c,1} =Sx;
+    S_cell{c,2} = Sy;
+
+    yc = yrange(1)+diff(yrange)/2;
+%     visreal(Hz{c}, xrange, yrange);
+%     line(xrange, [yc-thickness/2, yc-thickness/2]);
+%     line(xrange, [yc+thickness/2, yc+thickness/2]);
+
+    xlabel('x axis (microns)')
+    ylabel('y axis')
+    x = linspace(xrange(1), xrange(2), N(1));
+    y = linspace(yrange(1), yrange(2), N(2));
+    % 
+    % figure();
+    % plot(y, mean(abs(Hz),1))
+
+    
+    
+    %%reference simulation
+    tic
+    [Hzr{c}, Exr, Eyr] = ...
+        solveTE(L0, wvlen, xrange, yrange, ones(N), Mz, Npml);
+    toc
+    [Sxr, Syr] = poynting(Hzr{c}, Exr, Eyr);
+
+    
+    %% Reflection
+    probe_ind_y = Npml(2)+10;
+    probe_ind_y_ref = 300;
+    R_vec(c) = abs(sum(Sy(:, probe_ind_y_ref))) / abs(sum(Syr(:, probe_ind_y_ref)))
+
+    c = c+1;
+    %drawnow();
+end
+
+figure()
+plot(wvlen_scan, R_vec)
+
+
+

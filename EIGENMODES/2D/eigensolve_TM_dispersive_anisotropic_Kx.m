@@ -1,20 +1,14 @@
-function [Hz, Ex, Ey, A, A_mode, omega,b] = ...
-    eigensolve_TM_dispersive_anisotropic_Kx(L0, wvlen, xrange, yrange, eps_tensor, Mz,Jx,Jy, Npml)
+function [Hz_modes, Ex_modes, Ey_modes, eigenvals,C,B,A, LHS, RHS] = ...
+    eigensolve_TM_dispersive_anisotropic_Kx(L0, wvlen,...
+    xrange, yrange, eps_tensor, Npml,neigs, kx_guess)
 %% Input Parameters
 % wvlen: wavelength in L0
 % xrange: [xmin xmax], range of domain in x-direction including PML
 % yrange: [ymin ymax], range of domain in y-direction including PML
-% eps_r: Nx-by-Ny array of relative permittivity
-% Mz: Nx-by-Ny array of magnetic current source density
+% eps_tensor: 2x2 anisotropic (potentially permittivity)
 % Npml: [Nx_pml Ny_pml], number of cells in x- and y-normal PML
 
 %% Output Parameters
-% Hz, Ex, Ey: Nx-by-Ny arrays of H- and E-field components
-% dL: [dx dy] in L0
-% A: system matrix of A x = b
-% omega: angular frequency for given wvlen
-% Dxf, Dyf - derivative matrices
-% SXf, sxf - derivative matrices with pml implemented
 
 %% Set up the domain parameters.
 
@@ -24,7 +18,7 @@ mu_0 = 4*pi*10^-7*L0;
 eps0 = eps_0;  % vacuum permittivity
 mu0 = mu_0;  % vacuum permeability in
 c0 = 1/sqrt(eps0*mu0);  % speed of light in 
-N = size(Mz);  % [Nx Ny] THIS IS THE POINT WHERE THE GRID SIZE IS DETERMINED
+N = size(eps_tensor{1,1});  % [Nx Ny] THIS IS THE POINT WHERE THE GRID SIZE IS DETERMINED
 omega = 2*pi*c0/(wvlen);  % angular frequency in rad/sec
 
 
@@ -94,15 +88,6 @@ Texy = Ryb*Rxf*spdiags(Exy, 0,M,M);
 Teyx = Rxb*Ryf*spdiags(Eyx, 0,M,M); %have large regions of the diagonal that are 0
 TD = spdiags(Determinant, 0,M,M);
 
-Tmz = mu0*speye(M); %in most cases, permeability is that of free-space
-
-%% Create Magnetic vector Mz (source profile determined by Mz input)
-% dimension = M*1
-
-Mz = reshape(Mz,M,1);
-Mz = sparse(Mz);
-
-
 %% create the derivative oeprators w/ PML
 
 N = [Nx, Ny];
@@ -112,42 +97,72 @@ Dxf = createDws('x', 'f', dL, N);
 Dyf = createDws('y', 'f', dL, N);
 Dyb = createDws('y', 'b', dL, N); 
 Dxb = createDws('x', 'b', dL, N); 
-Dxf_pml = Sxf\Dxf; 
-Dyf_pml = Syf\Dyf;
-Dyb_pml = Syb\Dyb; 
-Dxb_pml = Sxb\Dxb; 
+Dxf = Sxf\Dxf; 
+Dyf = Syf\Dyf;
+Dyb = Syb\Dyb; 
+Dxb = Sxb\Dxb; 
 
-%% Work on the electric current source
-Jxf = sparse(reshape(Jx, M,1));
-Jyf = sparse(reshape(Jy, M,1));
-
-jxcon = Dyf_pml*(TD*(Teyy*Jxf+Texy*Jyf));
-jycon = Dxf_pml*(TD*(Teyx*Jxf+Texx*Jyf));
+%% construct the inverse epsilon terms
+fxx = TD*Texx;
+fyy = TD*Teyy;
+fxy = TD*Texy;
+fyx = TD*Teyx;
 
 %% Construct the matrix A, everything is in 2D
-A_mode = Dyf_pml*TD*(Teyy*Dyb_pml + Texy *Dxb_pml) + ...
-         Dxf_pml*TD*(Teyx*Dyb_pml + Texx*Dxb_pml);
-A = A_mode + omega^2*Tmz;
-% note a warning about ill-conditioned matrices might pop up here, but
-% for our purposes, it is okay.
+%% rule of thumb b is before f since we're operating on H
+I = speye(M);
+Z = zeros(M,M,'like',I);
+C = -mu0^-1*fxx;                                                     %% K^2
+B = mu0^-1*1i*(fxx*Dxb + Dxf*fxx + Dyf*fxy + fxy *Dyb);                           %% K
+A = mu0^-1*(Dxf*fxx*Dxb  + Dxf*fyx*Dyb +...
+    + Dyf*fxy*Dxb + Dyf*fyy*Dyb + omega^2*mu0*I);      %% CONSTANT
 
-%% construct the matrix b, everything is in 2D
-b = 1i*omega*Mz +jxcon +jycon;
+%% formulate the problem
+LHS = [Z , -C; 
+       I ,  Z];
+RHS = [A, B; 
+       Z, I ];
+NL = size(LHS);
 
 %% solve system
-% %% Solve the equation.
-if all(b==0)
-hz = zeros(size(b));
-else
-hz = A\b;
-end
-Hz = reshape(hz, N);
+tic
+[U,V] = eigs(RHS,LHS,neigs,kx_guess); %polyeigs is actually not suitable because it will solve all eigens
+toc
+%we need to linearize the eigenproblem ourselves
 
-%% reconstruct Ex Ey
-ex = TD*(Teyy*Dyb_pml+Texy*Dxb_pml)*hz;
-ey = -TD*(Teyx*Dyb_pml+Texx*Dxb_pml)*hz;
-Ex = (1/(1i*omega))*reshape(ex, N);
-Ey = (1/(1i*omega))*reshape(ey, N);
+%% EXTRACT MODES
+eigenvals = diag(V); %eigenvals solved are omega^2*mu0
+Hz_modes = cell(1);
+Ex_modes = cell(1);
+Ey_modes = cell(1);
+uz_bloch_modes = cell(1);
+ux_bloch_modes = cell(1);
+uy_bloch_modes = cell(1);
+
+%% process the eigenmodes
+
+x = linspace(xrange(1), xrange(2), N(1))+diff(xrange)/2; 
+%the fact that xrange is positive and negative in x will be a problem
+% when complex wavevectors are involved.
+
+x = repmat(x.', [N(2), 1]); 
+for i = 1:neigs
+    Kx = V(i,i);
+    hz = U(1:round(NL/2),i);%.*exp(-1i*real(Kx)*x);%.*exp(-1i*Kx*x);
+    Hz = reshape(hz, Nx,Ny);
+    uz_bloch_modes{i} = reshape(U(1:round(NL/2),i), Nx,Ny);
+    
+    ex = (1/(1i*omega))*TD*(Teyy*Dyb+Texy*Dxb)*hz;
+    ey = -(1/(1i*omega))*TD*(Teyx*Dyb+Texx*Dxb)*hz;
+    
+    Ex = reshape(ex, Nx, Ny);
+    Ey = reshape(ey, Nx,Ny);
+    Hz_modes{i} = Hz;
+    Ex_modes{i} = Ex;
+    Ey_modes{i} = Ey;
+
+end
+
 
  
 end

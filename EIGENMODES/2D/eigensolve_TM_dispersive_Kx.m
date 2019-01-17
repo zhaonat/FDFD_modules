@@ -105,7 +105,6 @@ function [Hz_modes, Ex_modes, Ey_modes, eigenvals] = ...
     toc
     %we need to linearize the eigenproblem ourselves
 
-    
 
     eigenvals = diag(V); %eigenvals solved are omega^2*mu0
     Hz_modes = cell(1);

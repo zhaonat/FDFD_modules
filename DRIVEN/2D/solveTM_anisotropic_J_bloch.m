@@ -1,5 +1,5 @@
-function [Hz, Ex, Ey, A, A_mode, omega,b, Tepx, Tepy, Dxf, Dxb, Dyf, Dyb] = ...
-    solveTM_anisotropic(L0, wvlen, xrange, yrange, eps_r, Mz, Npml)
+function [Hz, Ex, Ey, A, A_mode, omega,b] = ...
+    solveTM_anisotropic_J_bloch(L0, wvlen, xrange, yrange, eps_tensor, Mz,Jx,Jy, Npml)
 %% Input Parameters
 % wvlen: wavelength in L0
 % xrange: [xmin xmax], range of domain in x-direction including PML
@@ -24,16 +24,10 @@ mu_0 = 4*pi*10^-7*L0;
 eps0 = eps_0;  % vacuum permittivity
 mu0 = mu_0;  % vacuum permeability in
 c0 = 1/sqrt(eps0*mu0);  % speed of light in 
-N = size(eps_r);  % [Nx Ny] THIS IS THE POINT WHERE THE GRID SIZE IS DETERMINED
+N = size(Mz);  % [Nx Ny] THIS IS THE POINT WHERE THE GRID SIZE IS DETERMINED
 omega = 2*pi*c0/(wvlen);  % angular frequency in rad/sec
 
-%% Set up the permittivity and permeability in the domain.
-% bwdmean does nearest neighbor averaging (smoothes out stuff)
-eps_x = bwdmean_w(eps0 * eps_r, 'x');  % average eps for eps_x
-eps_y = bwdmean_w(eps0 * eps_r, 'y');  % average eps for eps_y
-%these are fully dense matrices...
 
-%currently, eps_x and eps_y are ultra-dense, which isn't right...
 
 %% Set up number of cells
 %the wavelength is much larger than the dimensions of the system...
@@ -73,11 +67,11 @@ eyy = eps0*eps_tensor{2,2};
 
 %% Set up the permittivity and permeability in the domain.
 % this should be x and y too for exx and eyy respectively 
-exx_avg = bwdmean_w(exx, 'x');  % average eps for eps_x
-eyy_avg = bwdmean_w(eyy, 'y');  % average eps for eps_y
-exy =  interpolate_array(interpolate_array(exy, 'y', 'f'), 'x','b');  % average eps for eps_x
-eyx = interpolate_array(interpolate_array(eyx, 'x', 'f'), 'y','b');  % average eps for eps_y
-determinant = (exx_avg.*eyy_avg -exy.*eyx).^-1;
+exx = bwdmean_w(exx, 'y');  % average eps for eps_x
+eyy = bwdmean_w(eyy, 'x');  % average eps for eps_y
+exy =  bwdmean_w(exy, 'y');  % average eps for eps_x
+eyx = bwdmean_w(eyx, 'x');  % average eps for eps_y
+determinant = (exx.*eyy -exy.*eyx).^-1;
 
 % flatten out
 Exx = reshape(exx,M,1);
@@ -86,12 +80,18 @@ Exy = reshape(exy,M,1);
 Eyx = reshape(eyx,M,1);
 Determinant = reshape(determinant, M,1);
 
+%% create interpolation functions;
+Rxf = interpolate(N, 'x', 'f');
+Rxb = interpolate(N, 'x', 'b');
+Ryf = interpolate(N, 'y', 'f');
+Ryb = interpolate(N, 'y', 'b');
+
 % convert to matrices
 Texx = spdiags(Exx,0,M,M); % creates an MxM matrix, which is the correct size,
 Teyy = spdiags(Eyy,0,M,M);
 %have to be careful...only invert nonzero exy or eyx
-Texy = spdiags(Exy, 0,M,M);
-Teyx = spdiags(Eyx, 0,M,M); %have large regions of the diagonal that are 0
+Texy = Ryb*Rxf*spdiags(Exy, 0,M,M);
+Teyx = Rxb*Ryf*spdiags(Eyx, 0,M,M); %have large regions of the diagonal that are 0
 TD = spdiags(Determinant, 0,M,M);
 
 Tmz = mu0*speye(M); %in most cases, permeability is that of free-space
@@ -101,6 +101,7 @@ Tmz = mu0*speye(M); %in most cases, permeability is that of free-space
 
 Mz = reshape(Mz,M,1);
 Mz = sparse(Mz);
+
 
 %% create the derivative oeprators w/ PML
 
@@ -116,27 +117,37 @@ Dyf_pml = Syf\Dyf;
 Dyb_pml = Syb\Dyb; 
 Dxb_pml = Sxb\Dxb; 
 
+%% Work on the electric current source
+Jxf = sparse(reshape(Jx, M,1));
+Jyf = sparse(reshape(Jy, M,1));
+
+jxcon = Dyf_pml*(TD*(Teyy*Jxf+Texy*Jyf));
+jycon = Dxf_pml*(TD*(Teyx*Jxf+Texx*Jyf));
 
 %% Construct the matrix A, everything is in 2D
-A_mode = Dyf_pml*() + Dyf_pml*(Tepy^-1)*Dyb_pml;
+A_mode = Dyf_pml*TD*(Teyy*Dyb_pml + Texy *Dxb_pml) + ...
+         Dxf_pml*TD*(Teyx*Dyb_pml + Texx*Dxb_pml);
 A = A_mode + omega^2*Tmz;
 % note a warning about ill-conditioned matrices might pop up here, but
 % for our purposes, it is okay.
 
 %% construct the matrix b, everything is in 2D
-b = 1i*omega*Mz;
+b = 1i*omega*Mz +jxcon +jycon;
 
 %% solve system
-t0 =cputime
 % %% Solve the equation.
- if all(b==0)
- 	hz = zeros(size(b));
- else
- 	hz = A\b;
- end
- trun = cputime-t0;
- Hz = reshape(hz, N);
+if all(b==0)
+hz = zeros(size(b));
+else
+hz = A\b;
+end
+Hz = reshape(hz, N);
 
+%% reconstruct Ex Ey
+ex = TD*(Teyy*Dyb_pml+Texy*Dxb_pml)*hz;
+ey = -TD*(Teyx*Dyb_pml+Texx*Dxb_pml)*hz;
+Ex = (1/(1i*omega))*reshape(ex, N);
+Ey = (1/(1i*omega))*reshape(ey, N);
 
  
 end
