@@ -26,6 +26,7 @@ For comparison, here is the non-dispersive eigensolver (k is the input, frequenc
 And for the TM polarization, the dispersive solver with the imaginary parts shown:
 ![](img/TM_benchmarking_PWEM_and_FDFD_dispersive.png?raw=true)
 
+(I'll need to rerun the TM with higher plane wave orders and higher discretization accuracy, did not use enough for either)
 
 The advantage of this formulation is you get the imaginary parts of the band structure 
 ## 3D Solver with acceleration and enhancements
