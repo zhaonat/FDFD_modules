@@ -23,6 +23,10 @@ For comparison, here is the non-dispersive eigensolver (k is the input, frequenc
 
 ![](img/TE_benchmarking_PWEM_and_FDFD_nondispsersive.png?raw=true)
 
+And for the TM polarization, the dispersive solver with the imaginary parts shown:
+![](img/TM_benchmarking_PWEM_and_FDFD_dispersive.png?raw=true)
+
+
 The advantage of this formulation is you get the imaginary parts of the band structure 
 ## 3D Solver with acceleration and enhancements
 uses a powerful reformulation of Maxwell's equations to accelerate iterative solutions based on the Beltrami-Laplace operator shown here: http://www.mit.edu/~wsshin/pdf/shin2013oe.pdf
