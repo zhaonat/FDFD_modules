@@ -14,16 +14,16 @@ Will do simulations with a source (point source, line source, mode profiles, pla
 New type of mode solvers which can be used for 2 dimensional structures, based on the paper shown here
 https://www.osapublishing.org/ol/abstract.cfm?uri=ol-40-6-1053
 
-As an example, we consider the classic and simple 2D photonic crystal circle (pillars)
+As an example, we consider the classic and simple 2D photonic crystal circle (pillars) in the TE polarization (the parameters of the circle and unit cell are taken from the Johannopoulos book, Photonic Crystals).
 
-![](img/TE_benchmarking_PWEM_and FDFD_dispsersive.png?raw=true)
+![](img/TE_benchmarking_PWEM_and_FDFD_dispersive.png?raw=true)
+Here, blue is FDFD and green is PWEM (need to fix the legend). There is an anomalous point which could have been caught with a mode filter (note no mode filter applied so almost everything output is realistic)
 
-For comparison, here is the non-dispersive eigensolver
+For comparison, here is the non-dispersive eigensolver (k is the input, frequency is the output)
 
-![](img/TE_benchmarking_PWEM_and FDFD_nondispsersive.png?raw=true)
+![](img/TE_benchmarking_PWEM_and_FDFD_nondispsersive.png?raw=true)
 
 The advantage of this formulation is you get the imaginary parts of the band structure 
-
 ## 3D Solver with acceleration and enhancements
 uses a powerful reformulation of Maxwell's equations to accelerate iterative solutions based on the Beltrami-Laplace operator shown here: http://www.mit.edu/~wsshin/pdf/shin2013oe.pdf
 
