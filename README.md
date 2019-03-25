@@ -16,11 +16,11 @@ https://www.osapublishing.org/ol/abstract.cfm?uri=ol-40-6-1053
 
 As an example, we consider the classic and simple 2D photonic crystal circle (pillars)
 
-![](img/TE_benchmarking_PWEM_and FDFD_dispsersive.png?raw=true)
+![Alt text](./img/TE_benchmarking_PWEM_and FDFD_dispsersive.png?raw=true)
 
 For comparison, here is the non-dispersive eigensolver
 
-![](img/TE_benchmarking_PWEM_and FDFD_nondispsersive.png?raw=true)
+![Alt text](./img/TE_benchmarking_PWEM_and FDFD_nondispsersive.png?raw=true)
 
 The advantage of this formulation is you get the imaginary parts of the band structure 
 
