@@ -20,7 +20,7 @@ As an example, we consider the classic and simple 2D photonic crystal circle (pi
 
 For comparison, here is the non-dispersive eigensolver
 
-![](img/TE_benchmarking_PWEM_and FDFD_nondispsersive.png?raw=true)
+![](img/TE_benchmarking_PWEM_and_FDFD_nondispersive.png?raw=true)
 
 The advantage of this formulation is you get the imaginary parts of the band structure 
 ## 3D Solver with acceleration and enhancements
