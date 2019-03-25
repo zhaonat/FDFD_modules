@@ -1,13 +1,15 @@
 
 function [Ez_modes, Hx_modes, Hy_modes, eigenvals] = eigensolve_TE(L0, wvlen, xrange, ...
-    yrange, eps, Npml, neigs, K_vec)
+    yrange, eps_r, Npml, neigs, K_vec)
    
     if(nargin<8)
        K_vec = [0,0]; 
     end
+    Kx = K_vec(1);
+    Ky = K_vec(2);
     %EIGENSOLVE_TM Summary of this function goes here
     %   Detailed explanation goes here
-       eps_0 = 8.85*10^-12*L0;
+    eps_0 = 8.85*10^-12*L0;
     mu_0 = 4*pi*10^-7*L0; 
     eps0 = eps_0;  % vacuum permittivity
     mu0 = mu_0;  % vacuum permeability in
@@ -15,10 +17,10 @@ function [Ez_modes, Hx_modes, Hy_modes, eigenvals] = eigensolve_TE(L0, wvlen, xr
     omega = 2*pi*c0/(wvlen);  % angular frequency in rad/sec
 
     %% unravel the epsilon tensor;
-    N = size(eps);
+    N = size(eps_r);
     
     %% Set up the permittivity and permeability in the domain.
-    ezz = bwdmean_w(eps0*eps, 'z');  % average eps for eps_y
+    ezz = bwdmean_w(eps0*eps_r, 'z');  % average eps for eps_y
 
     %% Set up number of cells
     xmin = xrange(1); xmax = xrange(2);
@@ -67,9 +69,12 @@ function [Ez_modes, Hx_modes, Hy_modes, eigenvals] = eigensolve_TE(L0, wvlen, xr
     Dyb = Syb^-1*Dyb; Dxb = Sxb^-1*Dxb; 
     
     %% PROBLEM CONSTRUCTION
-    disp('get operator');
-    A = -(1/mu0)*(Dxb*Dxf + Dyb*Dyf); %
-    B = Tez;
+%     disp('get operator');
+%     A = -(1/mu0)*(Dxb*Dxf + Dyb*Dyf); %
+%     B = Tez;
+    
+    A = -mu0^-1 * Tez^-1 * (Dxb*Dxf - 1i*Kx*Dxb - 1i*Kx*Dxf - Kx^2*speye(M) + Dyb*Dyf); 
+    
     
     %% or explicit bloch formulation
 %     Dxs_K = (Dxf_pml*Dxb_pml - 1i*K*Dxf_pml - 1i*K*Dxb_pml - K^2*speye(M));
@@ -80,8 +85,7 @@ function [Ez_modes, Hx_modes, Hy_modes, eigenvals] = eigensolve_TE(L0, wvlen, xr
     omega_est = 2*pi*c0/(wvlen);
     %[U,V] = eigs(A, B, neigs, 'smallestabs');
     %find eigenmodes near desired frequency
-    [U,V] = eigs(A, B, neigs, omega_est^2);
-
+    [U,V] = eigs(A, neigs, omega_est^2);  %;
     eigenvals = sqrt(diag(V)); %eigenvals solved are omega^2*mu0
     
     Ez_modes= cell(1);

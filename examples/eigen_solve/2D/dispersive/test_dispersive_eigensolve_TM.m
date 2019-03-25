@@ -7,64 +7,79 @@ clear
 L0 = 1e-6;  % length unit: microns
 mu0 = 4*pi*1e-7*L0;
 eps0 = 8.854e-12*L0;
-c0 = 3e8;
-xrange = 0.1*[-1,1];  % x boundaries in L0
+c0 = 1/sqrt(mu0*eps0);
+xrange = 0.5*[-1,1];  % x boundaries in L0
 yrange = 0.5*[-1,1];  % y boundaries in L0
+a = diff(xrange);
 L = [diff(xrange), diff(yrange)];
-N = [100 250];  % [Nx Ny]
-Npml = 1*[0 10];  % [Nx_pml Ny_pml]
+N = [120 120];  % [Nx Ny]
+Npml = 1*[0 0];  % [Nx_pml Ny_pml]
 
 [xrange, yrange, N, dL, Lpml] = domain_with_pml(xrange, yrange, N, Npml);  % domain is expanded to include PML
 Nx = N(1); Ny = N(2);
 cx = round(Nx/2); cy = round(Ny/2);
-wvlen = 2.8;
-%% Set up the permittivity.
-omega = 2*pi*c0/(wvlen*L0);
-omega_p =  0.72*pi*1e15;
-gamma = 5.5e12;
-epsilon_metal = 1-omega_p^2/(omega^2-1i*gamma*omega);
-epsilon = ones(N);
-x = linspace(xrange(1), xrange(2), Nx);
-y = linspace(yrange(1), yrange(2), Ny);
-[xx, yy] = meshgrid(x,y); 
-xx = xx.'; yy = yy.';
-half_ny = 20;
-xlim = [-0.1, 0.1];
-ylim = [-half_ny*dL(2), half_ny*dL(2)];
-epsilon(:,cy-half_ny:cy+half_ny) = 16;
-epsilon(cx-10:cx+10, cy-half_ny:cy+half_ny) = epsilon_metal;
-figure();
-visreal(epsilon, xrange, yrange);
+i = 1:Nx;
+j = 1:Ny;
+
+[I,J] = meshgrid(i,j);
+eps_r = ones(Nx,Ny);
+radius = 0.2;
+R = (radius/a)*Nx;
+
+eps_r((J-cx).^2+(I-cy).^2 <= R^2) = 8.9;
+
+visreal(eps_r, xrange, yrange)
 drawnow();
 
-%% eigensolve
-neigs = 60;
-kx_guess = 0*pi/L(1);
-[Hz_modes, Ex_modes, Ey_modes, kx_eigs] = ...
-    eigensolve_TM_dispersive_Kx(L0, omega, xrange, yrange, epsilon, Npml, neigs, kx_guess);
-[filtered_modes, filtered_k] = ...
-    mode_filtering(Hz_modes, kx_eigs, epsilon, xlim, ylim, L, Npml);
-filtered_modes = Hz_modes; filtered_k = kx_eigs;
-
-for i = 1:length(filtered_k)
-    figure();
-    Kx = filtered_k(i);%small Kx, but these modes should not be asymmetric
-    visreal(filtered_modes{i}.*exp(-1i*real(Kx)*xx), xrange, yrange);
-    title(strcat(num2str(i), ', ', num2str(real(Kx)/(2*pi)*diff(xrange))));  
-end
-drawnow();
-
-%% compare to the non-dispersive solver
-% neigs = 60;
-% [Ez, Hx, Hy, omega_eigs] = solveTM_BlochX(L0, wvlen, xrange, yrange, epsilon, kx_guess, Npml, neigs);
-% [filtered_modes_check, filtered_omega] = ...
-%     mode_filtering(Ez, omega_eigs, epsilon, xlim, ylim, L, Npml);
-% 
-% for i = 1:length(omega_eigs)
-%     if(abs(real(omega_eigs(i)))/omega > 0.1 && abs(real(omega_eigs(i)))/omega <6 )
-%         figure();
-% 
-%         visreal(Ez{i}, xrange, yrange);
-%         title(strcat(num2str(i), ', ', num2str(omega_eigs(i))));
-%     end
+Ky = 0;
+neigs = 4;
+kx_guess = 0;
+%wvlen_scan = linspace(2, 20, 400);
+wvlen_scan = logspace(log10(1.1), log10(10), 2000);
+kx_spectra = [];
+% c = 1;
+% for wvlen = (wvlen_scan)
+%     omega = 2*pi*c0/wvlen;
+%     [Ez_modes, Hx_modes, Hy_modes, eigenvals] = ...
+%         eigensolve_TE_dispersive_Kx(L0, omega, xrange, ...
+%         yrange, eps_r, Npml, neigs, kx_guess, Ky);
+%     kx_spectra = [kx_spectra, eigenvals];
+% %     if(mod(c,20) == 0)
+% %        figure()
+% %        visreal(Ez_modes{1}, xrange, yrange)
+% %        title(c)
+% %        drawnow();
+% %     end
+%     c = c+1;    
 % end
+
+
+parfor c = 1:length(wvlen_scan)
+    wvlen = wvlen_scan(c);
+    omega = 2*pi*c0/wvlen;
+    [Hz_modes, Ex_modes, Ey_modes, eigenvals] = ...
+        eigensolve_TM_dispersive_Kx(L0, omega, xrange, ...
+        yrange, eps_r, Npml, neigs, kx_guess);
+    kx_spectra(c,:) =  eigenvals;
+end
+
+
+omega_scan = (2*pi*c0./wvlen_scan)*(a/(2*pi*c0));
+figure();
+plot(real(kx_spectra)*a, omega_scan, '.b');
+hold on;
+plot(imag(kx_spectra), omega_scan, '.r');
+ylabel('omega*a/2 pi c0')
+xlabel('ka')
+xlim([-pi, pi])
+
+figure();
+plot(real(kx_spectra)*a, omega_scan, '.b');
+hold on;
+ylabel('omega*a/2 pi c0')
+xlabel('ka')
+xlim([-pi, pi])
+ylim([0,0.8])
+save('TM_photonic_circle_bandstructure_for_comparison_with_Johannopoulos_book.mat')
+
+

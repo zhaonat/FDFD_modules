@@ -1,5 +1,5 @@
 
-function [Hz_modes, Ex_modes, Ey_modes, eigenvals] = ...
+function [Hz_modes, Ex_modes, Ey_modes, eigenvals,LHS, RHS] = ...
     eigensolve_TM_dispersive_Kx(L0, omega, xrange, ...
     yrange, eps_r, Npml, neigs, kx_guess)
    
@@ -84,10 +84,19 @@ function [Hz_modes, Ex_modes, Ey_modes, eigenvals] = ...
     %B = -2*(mu0^-1)*1i*Vxf*Tex^-1*Dxb;                          % lambda    
     B = (mu0^-1)*(1i*(Dxf*Tex^-1+Tex^-1*Dxb));
                           % lambda    
-    LHS = [Z , -C; 
-           I ,  Z];
-    RHS = [A, B; 
-           Z, I ];
+    %% this form of the LHS looks WRONG, it should be a diagonal block matrix, not offdiagonal
+%   formulation that I generally see...
+%     LHS = [I,  Z; Z, M];
+%     RHS = [Z I; 
+%            -K, -C ];    
+    LHS = [C , Z; 
+           Z , I];
+    RHS = [B,  A; 
+           -I, Z];    
+%     LHS = [Z , -C; 
+%            I ,  Z];
+%     RHS = [A, B; 
+%            Z, I ];
     NL = size(LHS);
     
 %     A = -(Dxf*Tex^-1*Dxb - (KX*Te_unavged^-1*KX) + ...

@@ -8,10 +8,10 @@ function sfactor_array = create_sfactor(wrange, s, omega, eps0, mu0, Nw, Nw_pml,
     % Nw: number of cells in w-direction
     % Nw_pml: number of cells in PML
     if(nargin <8)
-        lnR = -16;  % R: target reflection coefficient for normal incidence
+        lnR = -12;  % R: target reflection coefficient for normal incidence
     end
     if(nargin <9)
-        m = 4;% degree of polynomial grading
+        m = 3.5;% degree of polynomial grading
     end
     %% Output Parameter
     % sfactor_array: 1D array with Nw elements containing PML s-factors for Dws

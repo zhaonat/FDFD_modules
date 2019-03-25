@@ -30,11 +30,11 @@ switch w
     case 'x'
         if s == 'f'
             dxf = -Ix + circshift(Ix, [0 1]);
-            dxf(Nx,1) = exp(1i*kx*Lx);
+            dxf(Nx,1) = exp(-1i*kx*Lx);
             Dws = 1/dL(1) * kron(Iy, dxf); 
         else
             dxb = Ix - circshift(Ix, [0 -1]); 
-            dxb(1,Nx) = -exp(-1i*kx*Lx);
+            dxb(1,Nx) = -exp(+1i*kx*Lx);
             Dws = 1/dL(1) * kron(Iy, dxb); 
         end
         
@@ -42,11 +42,11 @@ switch w
     case 'y'
         if s == 'f'
             dyf = -Iy + circshift(Iy, [0 1]); 
-            dyf(Ny,1) = exp(1i*ky*Ly);            
+            dyf(Ny,1) = exp(-1i*ky*Ly);            
             Dws = 1/dL(2) * kron(dyf, Ix); 
         else
             dyb = Iy - circshift(Iy, [0 -1]); 
-            dyb(1,Ny) = -exp(-1i*ky*Ly);            
+            dyb(1,Ny) = -exp(+1i*ky*Ly);            
 
             Dws = 1/dL(2) * kron(dyb, Ix); 
         end

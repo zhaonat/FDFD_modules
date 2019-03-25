@@ -1,7 +1,7 @@
 
 function [Ez_modes, Hx_modes, Hy_modes, eigenvals] = ...
     eigensolve_TE_dispersive_Kx(L0, omega, xrange, ...
-    yrange, eps_r, Npml, neigs, kx_guess)
+    yrange, eps_r, Npml, neigs, kx_guess, Ky)
    
     %EIGENSOLVE_TE Summary of this function goes here
     %   Detailed explanation goes here
@@ -57,7 +57,7 @@ function [Ez_modes, Hx_modes, Hy_modes, eigenvals] = ...
     %% Create the dielectric and permeability arrays (ex, ey, muz)
     Tex = spdiags(reshape(exx, M,1),0,M,M);
     Tey = spdiags(reshape(eyy, M,1),0,M,M);
-    Te_unavged = spdiags(eps0*eps_r(:), 0,M,M);
+    Tez = spdiags(eps0*eps_r(:), 0,M,M);
     %% create the derivative oeprators w/ PML
     N = [Nx, Ny];
     dL = [dx dy]; % Remember, everything must be in SI units beforehand
@@ -76,13 +76,19 @@ function [Ez_modes, Hx_modes, Hy_modes, eigenvals] = ...
 
     I = speye(M);
     Z = zeros(M,M,'like',I);    
-    A = (mu0^-1)*Te_unavged^-1*(Dxb*Dxf + Dyb*Dyf) + omega^2*I; % 1, with PML, this is not necessarily symmetric
-    C = -(mu0^-1)*Te_unavged^-1;                                % lambda^2: DIAGONAL MATRIX
-    B = (mu0^-1)*Te_unavged^-1*1i*(Dxf+Dxb);                           % lambda    
-    LHS = [Z , -C; 
-           I ,  Z];
-    RHS = [A, B; 
-           Z, I ];
+    A = -(mu0^-1)*Tez^-1*(Dxb*Dxf + Dyb*Dyf + 1i*(Dyb+Dyf)*Ky - Ky^2 *I) - omega^2*I; %+ 1i*(Dyb+Dyf)*Ky -Ky^2 *I;% 1, with PML, this is not necessarily symmetric
+    C = (mu0^-1)*Tez^-1;                                % lambda^2: DIAGONAL MATRIX
+    
+    %Vxf = abs(createDws('x', 'f', [2 2], N)); 
+    %B = -2*(mu0^-1)*1i*Vxf*(Te_unavged^-1)*Dxb; % this is wrong... makes the system look NON-hermitian.
+    
+    B = -(mu0^-1)*(Tez^-1)*1i*(Dxf+Dxb);   % this is wrong... doesn't
+    %match with the pwem code that I have, but at least obeys Hermiticity
+    
+    LHS = [C , Z; 
+           Z , I];
+    RHS = [B,  A; 
+           -I, Z];
     NL = size(LHS);
     
 %     A = -(Dxf*Tex^-1*Dxb - (KX*Te_unavged^-1*KX) + ...
