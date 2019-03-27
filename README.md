@@ -1,5 +1,5 @@
 # FDFD_modules
-personal set of FDFD codes used for my research. Much of this has been inspired by Yu (Jerry) Shi and Wonseok Shin
+personal set of FDFD codes used for my research. Much of this has been inspired by Yu (Jerry) Shi and Wonseok Shin. While python is really popular these days, Matlab will natively run many linear algebra operations (particular eigensolves) way faster than python (even with MKL it seems) so there are certainly practical advantages to using Matlab aside from the ease of prototyping code.
 
 ## dependencies
 Functional version of MatLab 2016 or greater. This was coded in Matlab 2017.
