@@ -1,5 +1,5 @@
 # FDFD_modules
-personal set of FDFD codes used for my research. Much of this has been inspired by Yu (Jerry) Shi and Wonseok Shin
+personal set of FDFD codes used for my research. Much of this has been inspired by Yu (Jerry) Shi and Wonseok Shin. While python is really popular these days, Matlab will natively run many linear algebra operations (particular eigensolves) way faster than python (even with MKL it seems) so there are certainly practical advantages to using Matlab aside from the ease of prototyping code.
 
 ## dependencies
 Functional version of MatLab 2016 or greater. This was coded in Matlab 2017.
@@ -22,6 +22,11 @@ Here, blue is FDFD and green is PWEM (need to fix the legend). There is an anoma
 For comparison, here is the non-dispersive eigensolver (k is the input, frequency is the output)
 
 ![](img/TE_benchmarking_PWEM_and_FDFD_nondispsersive.png?raw=true)
+
+And for the TM polarization, the dispersive solver with the imaginary parts shown:
+![](img/TM_benchmarking_PWEM_and_FDFD_dispersive.png?raw=true)
+
+(I'll need to rerun the TM with higher plane wave orders and higher discretization accuracy, did not use enough for either)
 
 The advantage of this formulation is you get the imaginary parts of the band structure 
 ## 3D Solver with acceleration and enhancements
