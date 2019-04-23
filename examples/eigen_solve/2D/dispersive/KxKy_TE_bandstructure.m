@@ -55,14 +55,16 @@ omega_scan = (2*pi*c0./wvlen_scan)*(a/(2*pi*c0));
 
 
 figure();
-for i = 1:neigs
+for i = 1:4:400
     plot(real(squeeze(ky_spectra(i,:,:)))*a, omega_scan, '.b');
     hold on;
-    plot(imag(squeeze(ky_spectra(i,:,:)))*a, omega_scan, '.r');
-    ylabel('omega*a/2 pi c0')
-    xlabel('ka')
-    xlim([-pi, pi])
+%     plot(imag(squeeze(ky_spectra(i,:,:)))*a, omega_scan, '.r');
+%     hold on;
+    drawnow()
 end
+ylabel('omega*a/2 pi c0')
+xlabel('ka')
+xlim([-pi, pi])
 % 
 % figure();
 % plot(real(kx_spectra)*a, omega_scan, '.b');
@@ -71,6 +73,8 @@ end
 % xlabel('ka')
 % xlim([-pi, pi])
 % ylim([0,0.8])
+
+
 save('kxky_photonic_circle_bandstructure.mat')
 
 
