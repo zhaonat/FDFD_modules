@@ -44,7 +44,7 @@ s_vector_y_b = create_sfactor(yrange, 'b', omega, eps0, mu0, N(2), Npml(2));
 % Fill the 2D space with layers of appropriate s-factors
 Sx_f_2D = zeros(N); 
 Sx_b_2D = zeros(N); 
-Sy_f_2D = zeros(N); -
+Sy_f_2D = zeros(N); 
 Sy_b_2D = zeros(N); 
 
 for j = 1:N(2)
@@ -79,7 +79,7 @@ dx = dL(1); dy = dL(2);
 sxf = diag(Sxf);
 syf = diag(Syf);
 sxb = diag(Sxb);
-syb = diag(Syb);
+syb = diag(
 % sxf = 1-imag(diag(Sxf));
 % syf = 1-imag(diag(Sxb));
 % sxf = (diag(Sxf));
@@ -87,8 +87,8 @@ syb = diag(Syb);
 % sxf(sxf>1) = sxf(sxf>1)*1i;
 % syf(syf>1) = syf(syf>1)*1i;
 
-numerator = sqrt(sxf).*sqrt(syf); %order shouldn't matter.
-denominator = 1./(sqrt(sxf).*sqrt(syf));
+numerator = sqrt(sxf).*sqrt(syf);
+denominator = 1./(sqrt(sxb).*sqrt(syb));
 Pr = spdiags(numerator, 0, N(1), N(2));
 Pl = spdiags(denominator, 0, N(1), N(2));
 
@@ -106,7 +106,7 @@ toc
 
 %% Visualize the solution.
 figure;
-visabs(Hz2, xrange, yrange)
+visabs(Hz, xrange, yrange)
 
 %%
 figure;

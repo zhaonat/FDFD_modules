@@ -25,6 +25,7 @@ function sfactor_array = create_sfactor(wrange, s, omega, eps0, mu0, Nw, Nw_pml,
     loc_pml = [w_array(1 + Nw_pml), w_array(end - Nw_pml)]; % specifies where the pml begins on each side
     d_pml = abs(wrange - loc_pml); % pml thickness
 
+    %% what happens when we have a 0 in the denominator
     sigma_max = -(m+1)*lnR/(2*eta0) ./ d_pml; %usually the pml is the same thickness on both sides
 
     %% forward or backward...idk what this is requiring
@@ -35,12 +36,11 @@ function sfactor_array = create_sfactor(wrange, s, omega, eps0, mu0, Nw, Nw_pml,
         ws = (w_array(1:end-1) + w_array(2:end)) / 2;
     end
 
-
     ind_pml = {ws < loc_pml(1), ws > loc_pml(2)};  % {} means cell array
 
     sfactor_array = ones(1, Nw);
     for n = 1:2
-        sfactor = @(l) 1 - 1i * sigma_max(n)/(omega*eps0) * (l/d_pml(n)).^m;
+        sfactor = @(L) 1 - 1i * sigma_max(n)/(omega*eps0) * (L/d_pml(n)).^m;
         sfactor_array(ind_pml{n}) = sfactor(abs(loc_pml(n) - ws(ind_pml{n})));
     end
 

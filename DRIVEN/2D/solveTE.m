@@ -90,6 +90,9 @@ mz = reshape(Mz, M, 1);
 % A = Sx_f *Dxf* T_eps_y^-1 *Sx_b *Dxb + Sy_f *Dyf* T_eps_x^-1* Sy_b*Dyb + omega^2*T_mu_z; 
 % A = Sx_f*Dxf* T_eps_y^-1 *Sx_b*Dxb + Sy_f*Dyf* T_eps_x^-1* Sy_b*Dyb + omega^2*T_mu_z; 
 
+%% =======================================================================%%
+%tic;[L,U,P,Q] = lu(A);toc; for umf pack
+%% =======================================================================%%
 
 I = speye(M); 
 A_mode = Dxf*(T_eps_x^-1)*Dxb + Dyf*(T_eps_y^-1)*Dyb;

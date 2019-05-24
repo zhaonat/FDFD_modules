@@ -25,7 +25,6 @@ within_fabry = @(x,y) y < d/2 & y>-d/2;
 epsilon = assign_val(epsilon, xrange, yrange, within_fabry, 12);
 
 %% PROBES
-probe_ind_y = Npml(2)+5;
 probe_ind_y_ref = N(2)-Npml(2)-10;
 
 %% Set up the magnetic current source density.
@@ -76,10 +75,12 @@ for wvlen = wvlen_scan
     %drawnow();
 end
 
-figure()
+f = figure()
 plot(wvlen_scan, R_vec)
 hold on;
 plot(wvlen_scan, 1-R_vec);
+legend( 'transmission', 'reflection')
+
 
 
 

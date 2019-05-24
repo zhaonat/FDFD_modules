@@ -1,5 +1,5 @@
 
-function [Ez_modes, Hx_modes, Hy_modes, eigenvals] = eigensolve_TE(L0, wvlen, xrange, ...
+function [Ez_modes, Hx_modes, Hy_modes, eigenvals, A] = eigensolve_TE(L0, wvlen, xrange, ...
     yrange, eps_r, Npml, neigs, K_vec)
    
     if(nargin<8)
@@ -32,10 +32,10 @@ function [Ez_modes, Hx_modes, Hy_modes, eigenvals] = eigensolve_TE(L0, wvlen, xr
     %% Set up the Split coordinate PML
     Nx_pml = Npml(1); Ny_pml = Npml(2);
     Nwx = Nx; Nwy = Ny;
-    sxf = create_sfactor_mine(xrange,'f',omega,eps_0,mu_0,Nwx,Nx_pml);
-    syf = create_sfactor_mine(yrange,'f', omega,eps_0,mu_0,Nwy,Ny_pml);
-    sxb = create_sfactor_mine(xrange, 'b', omega,eps_0,mu_0, Nwx, Nx_pml);
-    syb = create_sfactor_mine(yrange,'b', omega,eps_0,mu_0,Nwy,Ny_pml);
+    sxf = create_sfactor(xrange,'f',omega,eps_0,mu_0,Nwx,Nx_pml);
+    syf = create_sfactor(yrange,'f', omega,eps_0,mu_0,Nwy,Ny_pml);
+    sxb = create_sfactor(xrange, 'b', omega,eps_0,mu_0, Nwx, Nx_pml);
+    syb = create_sfactor(yrange,'b', omega,eps_0,mu_0,Nwy,Ny_pml);
 
     % now we create the matrix (i.e. repeat sxf Ny times repeat Syf Nx times)
     [Sxf, Syf] = ndgrid(sxf, syf);

@@ -32,7 +32,6 @@ figure();
 visreal(epsilon, xrange, yrange);
 
 %% PROBES
-probe_ind_y = Npml(2)+5;
 probe_ind_y_ref = N(2)-Npml(2)-10;
 
 %% Set up the magnetic current source density.
@@ -85,7 +84,6 @@ figure()
 plot(wvlen_scan, R_vec)
 hold on;
 plot(wvlen_scan, 1-R_vec);
-ylim([0,1])
 
 
 
